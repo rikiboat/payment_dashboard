@@ -1,0 +1,1067 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Sans+Thai:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://apis.google.com/js/api.js"></script>
+<script src="https://accounts.google.com/gsi/client" async defer></script>
+
+<script src="./support.js"></script>
+<style>
+  *{box-sizing:border-box}
+  body{margin:0}
+  ::-webkit-scrollbar{width:10px;height:10px}
+  ::-webkit-scrollbar-thumb{background:#d0d5dd;border-radius:8px}
+  ::-webkit-scrollbar-thumb:hover{background:#b9c0cc}
+  input,select,textarea,button{font-family:inherit}
+  @keyframes popIn{from{opacity:0;transform:translateY(8px) scale(.98)}to{opacity:1;transform:none}}
+  @keyframes fadeIn{from{opacity:0}to{opacity:1}}
+  @keyframes toastIn{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
+</style>
+</helmet>
+<div ref="{{ rootRef }}" style="min-height:100vh;background:#f4f5f7;color:#1d2433;font-family:'IBM Plex Sans','IBM Plex Sans Thai',sans-serif;font-size:14px;display:flex;flex-direction:column;-webkit-font-smoothing:antialiased;">
+
+  <!-- ===== TOP BAR ===== -->
+  <header style="display:flex;align-items:center;justify-content:space-between;gap:16px;padding:13px 22px;background:#fff;border-bottom:1px solid #e4e7ec;position:sticky;top:0;z-index:20;flex-wrap:wrap;">
+    <div style="display:flex;align-items:center;gap:12px;min-width:0;">
+      <div style="width:34px;height:34px;border-radius:9px;background:var(--accent,#2563a8);display:flex;align-items:center;justify-content:center;color:#fff;font-weight:700;font-size:15px;flex:0 0 auto;">N</div>
+      <div style="min-width:0;">
+        <div style="font-size:15px;font-weight:600;letter-spacing:-0.01em;line-height:1.2;">NHSO Task Tracker</div>
+        <div style="font-size:11.5px;color:#667085;line-height:1.3;">ระบบติดตามงาน · NHSO Payment</div>
+      </div>
+    </div>
+
+    <div style="display:flex;align-items:center;gap:9px;flex-wrap:wrap;">
+      <!-- file status -->
+      <sc-if value="{{ connected }}" hint-placeholder-val="{{ false }}">
+        <div style="display:flex;align-items:center;gap:8px;padding:6px 11px;background:#f1f5f9;border:1px solid #e2e8f0;border-radius:8px;max-width:300px;">
+          <span style="width:7px;height:7px;border-radius:8px;background:#2e9e63;flex:0 0 auto;"></span>
+          <div style="min-width:0;">
+            <div style="font-size:12px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:200px;font-family:'IBM Plex Mono',monospace;">{{ fileName }}</div>
+            <div style="font-size:10.5px;color:#667085;">{{ syncLabel }}</div>
+          </div>
+        </div>
+      </sc-if>
+      <sc-if value="{{ notConnected }}" hint-placeholder-val="{{ true }}">
+        <div style="display:flex;align-items:center;gap:8px;padding:6px 11px;background:#fbf6ea;border:1px solid #f0e3c4;border-radius:8px;">
+          <span style="width:7px;height:7px;border-radius:8px;background:#d39b2e;flex:0 0 auto;"></span>
+          <span style="font-size:12px;color:#85631a;font-weight:500;">Sample data · ตัวอย่าง</span>
+        </div>
+      </sc-if>
+
+      <button onClick="{{ onConnect }}" style="display:inline-flex;align-items:center;gap:6px;padding:8px 13px;border-radius:8px;font-size:12.5px;font-weight:600;border:1px solid #d0d5dd;background:#fff;color:#344054;cursor:pointer;" style-hover="background:#f9fafb;border-color:#b9c0cc;">{{ connectLabel }}</button>
+      <button onClick="{{ onReload }}" title="Reload from Google Sheet" style="display:inline-flex;align-items:center;gap:6px;padding:8px 12px;border-radius:8px;font-size:12.5px;font-weight:600;border:1px solid #d0d5dd;background:#fff;color:#344054;cursor:pointer;" style-hover="background:#f9fafb;border-color:#b9c0cc;">↻ Reload</button>
+      <button onClick="{{ onExport }}" title="Export to .xlsx" style="display:inline-flex;align-items:center;gap:6px;padding:8px 12px;border-radius:8px;font-size:12.5px;font-weight:600;border:1px solid #d0d5dd;background:#fff;color:#344054;cursor:pointer;" style-hover="background:#f9fafb;border-color:#b9c0cc;">⤓ Export</button>
+      <div style="width:1px;height:24px;background:#e4e7ec;"></div>
+      <button onClick="{{ onNew }}" style="display:inline-flex;align-items:center;gap:6px;padding:8px 15px;border-radius:8px;font-size:12.5px;font-weight:600;border:1px solid var(--accent,#2563a8);background:var(--accent,#2563a8);color:#fff;cursor:pointer;box-shadow:0 1px 2px rgba(37,99,168,.25);" style-hover="filter:brightness(1.07);">+ New task</button>
+    </div>
+  </header>
+
+  <!-- ===== BODY ===== -->
+  <main style="flex:1;padding:20px 22px 40px;max-width:1480px;width:100%;margin:0 auto;">
+
+    <!-- ===== DASHBOARD KPI STRIP ===== -->
+    <div style="display:flex;align-items:baseline;justify-content:space-between;gap:12px;margin-bottom:14px;flex-wrap:wrap;">
+      <div>
+        <div style="font-size:18px;font-weight:600;letter-spacing:-0.01em;">Dashboard</div>
+        <div style="font-size:12px;color:#667085;">ภาพรวมสถานะงาน · {{ total }} tasks</div>
+      </div>
+      <div style="font-size:11.5px;color:#98a2b3;display:flex;align-items:center;gap:6px;"><span style="width:6px;height:6px;border-radius:6px;background:#98a2b3;"></span>Reloads the Google Sheet every time you open the tab · โหลดข้อมูลจาก Google Sheet ใหม่ทุกครั้งที่เปิดดู</div>
+    </div>
+
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(244px,1fr));gap:14px;margin-bottom:20px;">
+
+      <!-- progress ring -->
+      <div style="background:#fff;border:1px solid #e4e7ec;border-radius:12px;padding:18px;display:flex;align-items:center;gap:16px;box-shadow:0 1px 2px rgba(16,24,40,.04);">
+        <div style="position:relative;flex:0 0 auto;width:84px;height:84px;">
+          <svg width="84" height="84" viewBox="0 0 84 84" style="transform:rotate(-90deg);">
+            <circle cx="42" cy="42" r="34" fill="none" stroke="#eef0f3" stroke-width="9"></circle>
+            <circle cx="42" cy="42" r="34" fill="none" stroke-width="9" stroke-linecap="round" stroke-dasharray="{{ ringCirc }}" stroke-dashoffset="{{ ringOffset }}" style="stroke:var(--accent,#2563a8);transition:stroke-dashoffset .5s ease;"></circle>
+          </svg>
+          <div style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;">
+            <span style="font-size:21px;font-weight:700;letter-spacing:-0.02em;font-family:'IBM Plex Mono',monospace;">{{ pct }}%</span>
+          </div>
+        </div>
+        <div style="min-width:0;">
+          <div style="font-size:13px;font-weight:600;">Active progress</div>
+          <div style="font-size:11.5px;color:#667085;margin-bottom:6px;">ความคืบหน้างานที่กำลังทำ</div>
+          <div style="font-size:12px;color:#344054;line-height:1.5;"><b style="font-family:'IBM Plex Mono',monospace;">{{ activeDone }}</b>/<span style="font-family:'IBM Plex Mono',monospace;">{{ activeTotal }}</span> done</div>
+          <div style="font-size:11px;color:#98a2b3;line-height:1.5;">{{ excludedNote }}</div>
+        </div>
+      </div>
+
+      <!-- totals -->
+      <div style="background:#fff;border:1px solid #e4e7ec;border-radius:12px;padding:18px;box-shadow:0 1px 2px rgba(16,24,40,.04);">
+        <div style="font-size:11.5px;color:#667085;font-weight:600;text-transform:uppercase;letter-spacing:.04em;margin-bottom:10px;">Totals · ทั้งหมด</div>
+        <div style="display:flex;align-items:flex-end;gap:8px;margin-bottom:12px;">
+          <span style="font-size:32px;font-weight:700;line-height:1;letter-spacing:-0.02em;font-family:'IBM Plex Mono',monospace;">{{ total }}</span>
+          <span style="font-size:12px;color:#667085;padding-bottom:4px;">tasks · งาน</span>
+        </div>
+        <div style="display:flex;gap:8px;">
+          <div style="flex:1;background:#e7f4ec;border-radius:8px;padding:8px 10px;">
+            <div style="font-size:18px;font-weight:700;color:#1f7a4d;font-family:'IBM Plex Mono',monospace;line-height:1;">{{ doneCount }}</div>
+            <div style="font-size:10.5px;color:#1f7a4d;margin-top:3px;">Done · เสร็จ</div>
+          </div>
+          <div style="flex:1;background:#f2f4f7;border-radius:8px;padding:8px 10px;">
+            <div style="font-size:18px;font-weight:700;color:#475467;font-family:'IBM Plex Mono',monospace;line-height:1;">{{ openCount }}</div>
+            <div style="font-size:10.5px;color:#475467;margin-top:3px;">In&nbsp;flight · ค้าง</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- by status -->
+      <div style="background:#fff;border:1px solid #e4e7ec;border-radius:12px;padding:16px 18px;box-shadow:0 1px 2px rgba(16,24,40,.04);">
+        <div style="font-size:11.5px;color:#667085;font-weight:600;text-transform:uppercase;letter-spacing:.04em;margin-bottom:11px;">By status · ตามสถานะ</div>
+        <div style="display:flex;flex-direction:column;gap:8px;">
+          <sc-for list="{{ statusBars }}" as="s" hint-placeholder-count="5">
+            <div style="display:flex;align-items:center;gap:9px;">
+              <span style="{{ s.dotStyle }}"></span>
+              <span style="font-size:12px;width:62px;flex:0 0 auto;">{{ s.label }}</span>
+              <div style="flex:1;height:6px;background:#f2f4f7;border-radius:999px;overflow:hidden;">
+                <div style="{{ s.barStyle }}"></div>
+              </div>
+              <span style="font-size:12px;font-weight:600;width:20px;text-align:right;font-family:'IBM Plex Mono',monospace;">{{ s.count }}</span>
+            </div>
+          </sc-for>
+        </div>
+      </div>
+
+      <!-- by env -->
+      <div style="background:#fff;border:1px solid #e4e7ec;border-radius:12px;padding:16px 18px;box-shadow:0 1px 2px rgba(16,24,40,.04);">
+        <div style="font-size:11.5px;color:#667085;font-weight:600;text-transform:uppercase;letter-spacing:.04em;margin-bottom:11px;">By environment · สภาพแวดล้อม</div>
+        <div style="display:flex;flex-direction:column;gap:8px;">
+          <sc-for list="{{ envBars }}" as="e" hint-placeholder-count="4">
+            <div style="display:flex;align-items:center;gap:9px;">
+              <span style="font-size:12px;width:96px;flex:0 0 auto;font-weight:500;">{{ e.label }}</span>
+              <div style="flex:1;height:6px;background:#f2f4f7;border-radius:999px;overflow:hidden;">
+                <div style="{{ e.barStyle }}"></div>
+              </div>
+              <span style="font-size:12px;font-weight:600;width:20px;text-align:right;font-family:'IBM Plex Mono',monospace;">{{ e.count }}</span>
+            </div>
+          </sc-for>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===== TOOLBAR: view toggle + filters ===== -->
+    <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:14px;flex-wrap:wrap;">
+      <div style="display:flex;align-items:baseline;gap:10px;">
+        <span style="font-size:15px;font-weight:600;color:#1d2433;">Tasks</span>
+        <span style="font-size:12px;color:#98a2b3;">รายการงาน · กดปุ่ม ✎ เพื่อแก้ไข</span>
+      </div>
+      <div style="display:flex;align-items:center;gap:9px;flex-wrap:wrap;">
+        <div style="position:relative;display:flex;align-items:center;">
+          <span style="position:absolute;left:10px;color:#98a2b3;font-size:13px;pointer-events:none;">⌕</span>
+          <input value="{{ search }}" onInput="{{ onSearch }}" placeholder="Search title, card, remark…" style="padding:8px 12px 8px 28px;border:1px solid #d0d5dd;border-radius:8px;font-size:12.5px;width:230px;background:#fff;outline:none;" style-focus="border-color:var(--accent,#2563a8);box-shadow:0 0 0 3px var(--accent-soft,#eaf1fa);">
+        </div>
+        <select value="{{ envFilter }}" onChange="{{ onEnvFilter }}" style="padding:8px 10px;border:1px solid #d0d5dd;border-radius:8px;font-size:12.5px;background:#fff;outline:none;cursor:pointer;color:#344054;">
+          <option value="all">All environments</option>
+          <option value="DEV">DEV · พัฒนา</option>
+          <option value="UAT">UAT · ทดสอบ</option>
+          <option value="PRODUCTION">PRODUCTION · ใช้งานจริง</option>
+          <option value="none">— (no env)</option>
+        </select>
+      </div>
+    </div>
+
+    <!-- status filter chips (table mode) -->
+    <sc-if value="{{ isTable }}" hint-placeholder-val="{{ false }}">
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:14px;flex-wrap:wrap;">
+        <sc-for list="{{ filterChips }}" as="c" hint-placeholder-count="6">
+          <button onClick="{{ c.onClick }}" style="{{ c.style }}">
+            <span style="{{ c.dotStyle }}"></span>
+            {{ c.label }}
+            <span style="font-family:'IBM Plex Mono',monospace;opacity:.7;">{{ c.count }}</span>
+          </button>
+        </sc-for>
+      </div>
+    </sc-if>
+
+    <!-- ===== TABLE VIEW ===== -->
+    <sc-if value="{{ isTable }}" hint-placeholder-val="{{ false }}">
+      <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:11px;flex-wrap:wrap;">
+        <div style="font-size:13px;color:#667085;">แสดง <b style="color:#1d2433;font-family:'IBM Plex Mono',monospace;">{{ rangeStart }}–{{ rangeEnd }}</b> จาก <b style="color:#1d2433;font-family:'IBM Plex Mono',monospace;">{{ rowCount }}</b> รายการ <span style="color:#aab2bd;">· {{ rangeStart }}–{{ rangeEnd }} of {{ rowCount }}</span></div>
+        <button onClick="{{ onImport }}" style="display:inline-flex;align-items:center;gap:7px;padding:8px 15px;border-radius:8px;font-size:12.5px;font-weight:600;border:1px solid var(--accent,#2563a8);background:var(--accent-soft,#eaf1fa);color:var(--accent,#2563a8);cursor:pointer;" style-hover="background:var(--accent,#2563a8);color:#fff;">⇪ นำเข้าไฟล์ · Import</button>
+      </div>
+      <div style="background:#fff;border:1px solid #e4e7ec;border-radius:12px;overflow:hidden;box-shadow:0 1px 2px rgba(16,24,40,.04);">
+        <div style="display:grid;grid-template-columns:52px minmax(280px,2.4fr) 132px 134px 158px 96px;gap:0;align-items:center;padding:0 18px;background:#f9fafb;border-bottom:1px solid #e4e7ec;font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.04em;color:#667085;height:42px;">
+          <span>#</span>
+          <span>Title</span>
+          <span>Card</span>
+          <span>Status</span>
+          <span>Env. / Date</span>
+          <span style="text-align:right;">จัดการ</span>
+        </div>
+        <div>
+          <sc-for list="{{ rows }}" as="t" hint-placeholder-count="8">
+            <div style="display:grid;grid-template-columns:52px minmax(280px,2.4fr) 132px 134px 158px 96px;gap:0;align-items:center;padding:var(--rowpad,12px 12px);padding-left:18px;padding-right:18px;border-bottom:1px solid #f0f2f4;" style-hover="background:#fafbfc;">
+              <span style="font-size:13px;color:#aab2bd;font-family:'IBM Plex Mono',monospace;">{{ t.num }}</span>
+              <div style="min-width:0;padding-right:16px;">
+                <div style="font-size:13.5px;font-weight:600;line-height:1.45;color:#1d2433;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;">{{ t.title }}</div>
+                <sc-if value="{{ t.hasRemark }}" hint-placeholder-val="{{ false }}">
+                  <div style="display:inline-flex;align-items:center;gap:6px;margin-top:5px;font-size:11px;color:#b06a12;font-weight:500;">
+                    <span style="width:11px;height:11px;border-radius:3px;background:#f0a93a;flex:0 0 auto;"></span>{{ t.remark }}
+                  </div>
+                </sc-if>
+              </div>
+              <span>
+                <sc-if value="{{ t.hasCard }}" hint-placeholder-val="{{ true }}"><a href="{{ t.card }}" target="_blank" rel="noopener" onClick="{{ stop }}" style="font-size:12.5px;color:var(--accent,#2563a8);text-decoration:none;font-family:'IBM Plex Mono',monospace;font-weight:500;" style-hover="text-decoration:underline;">{{ t.cardId }}</a></sc-if>
+                <sc-if value="{{ t.noCard }}" hint-placeholder-val="{{ false }}"><span style="font-size:12.5px;color:#cbd2da;">—</span></sc-if>
+              </span>
+              <span><span style="{{ t.statusChipStyle }}"><span style="{{ t.statusPillDot }}"></span>{{ t.statusEn }}</span></span>
+              <div>
+                <sc-if value="{{ t.hasEnv }}" hint-placeholder-val="{{ true }}"><div style="{{ t.envTextStyle }}">{{ t.envLabel }}</div></sc-if>
+                <sc-if value="{{ t.noEnv }}" hint-placeholder-val="{{ false }}"><div style="font-size:13px;color:#cbd2da;">—</div></sc-if>
+                <sc-if value="{{ t.hasDate }}" hint-placeholder-val="{{ false }}"><div style="font-size:11.5px;color:#98a2b3;margin-top:2px;font-family:'IBM Plex Mono',monospace;">{{ t.dateLong }}</div></sc-if>
+              </div>
+              <div style="display:flex;align-items:center;justify-content:flex-end;gap:7px;">
+                <button onClick="{{ t.onEditBtn }}" title="Edit · แก้ไข" style="width:32px;height:32px;border-radius:8px;border:1px solid #e4e7ec;background:#fff;color:#667085;cursor:pointer;display:flex;align-items:center;justify-content:center;flex:0 0 auto;" style-hover="border-color:var(--accent,#2563a8);color:var(--accent,#2563a8);background:var(--accent-soft,#eaf1fa);">
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"></path><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"></path></svg>
+                </button>
+                <button onClick="{{ t.onDeleteBtn }}" title="Delete · ลบ" style="width:32px;height:32px;border-radius:8px;border:1px solid #f1d6d0;background:#fff;color:#c0392b;cursor:pointer;display:flex;align-items:center;justify-content:center;flex:0 0 auto;" style-hover="border-color:#c0392b;background:#fbe9e6;">
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"></path><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"></path></svg>
+                </button>
+              </div>
+            </div>
+          </sc-for>
+          <sc-if value="{{ noRows }}" hint-placeholder-val="{{ false }}">
+            <div style="padding:40px;text-align:center;color:#98a2b3;font-size:13px;">No tasks match your filters · ไม่พบงานที่ตรงกับตัวกรอง</div>
+          </sc-if>
+        </div>
+      </div>
+      <sc-if value="{{ showPager }}" hint-placeholder-val="{{ false }}">
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;margin-top:14px;flex-wrap:wrap;">
+          <div style="font-size:12.5px;color:#98a2b3;">หน้า <b style="color:#475467;font-family:'IBM Plex Mono',monospace;">{{ page }}</b> / {{ pageCount }}</div>
+          <div style="display:flex;align-items:center;gap:6px;">
+            <button onClick="{{ onPrev }}" style="{{ prevStyle }}" title="Previous">‹</button>
+            <sc-for list="{{ pageItems }}" as="p" hint-placeholder-count="2">
+              <button onClick="{{ p.onClick }}" style="{{ p.style }}">{{ p.n }}</button>
+            </sc-for>
+            <button onClick="{{ onNext }}" style="{{ nextStyle }}" title="Next">›</button>
+          </div>
+        </div>
+      </sc-if>
+    </sc-if>
+  </main>
+
+  <!-- ===== EDITOR MODAL ===== -->
+  <sc-if value="{{ editorOpen }}" hint-placeholder-val="{{ false }}">
+    <div onClick="{{ onClose }}" style="position:fixed;inset:0;background:rgba(16,24,40,.45);display:flex;align-items:flex-start;justify-content:center;padding:40px 20px;z-index:60;animation:fadeIn .15s ease;overflow:auto;">
+      <div onClick="{{ stop }}" style="background:#fff;border-radius:14px;width:100%;max-width:580px;box-shadow:0 24px 60px rgba(16,24,40,.28);animation:popIn .18s cubic-bezier(.16,1,.3,1);overflow:hidden;">
+        <div style="display:flex;align-items:center;justify-content:space-between;padding:18px 22px;border-bottom:1px solid #eef0f3;">
+          <div>
+            <div style="font-size:15px;font-weight:600;">{{ editorTitle }}</div>
+            <div style="font-size:12px;color:#667085;">{{ editorSub }}</div>
+          </div>
+          <button onClick="{{ onClose }}" style="width:30px;height:30px;border-radius:8px;border:none;background:#f2f4f7;color:#667085;cursor:pointer;font-size:16px;line-height:1;" style-hover="background:#e4e7ec;">×</button>
+        </div>
+
+        <div style="padding:20px 22px;display:flex;flex-direction:column;gap:15px;max-height:62vh;overflow:auto;">
+          <div>
+            <label style="display:block;font-size:11.5px;font-weight:600;color:#475467;margin-bottom:5px;">Title · ชื่องาน <span style="color:#d15842;">*</span></label>
+            <textarea value="{{ draft.title }}" onInput="{{ onTitle }}" rows="2" placeholder="ระบุชื่องาน / task title" style="width:100%;padding:9px 11px;border:1px solid #d0d5dd;border-radius:8px;font-size:13px;resize:vertical;outline:none;line-height:1.5;" style-focus="border-color:var(--accent,#2563a8);box-shadow:0 0 0 3px var(--accent-soft,#eaf1fa);"></textarea>
+          </div>
+
+          <div>
+            <label style="display:block;font-size:11.5px;font-weight:600;color:#475467;margin-bottom:5px;">Card · ลิงก์ Jira</label>
+            <input value="{{ draft.card }}" onInput="{{ onCard }}" placeholder="https://…atlassian.net/browse/HEDP-…" style="width:100%;padding:9px 11px;border:1px solid #d0d5dd;border-radius:8px;font-size:12.5px;outline:none;font-family:'IBM Plex Mono',monospace;" style-focus="border-color:var(--accent,#2563a8);box-shadow:0 0 0 3px var(--accent-soft,#eaf1fa);">
+          </div>
+
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:13px;">
+            <div>
+              <label style="display:block;font-size:11.5px;font-weight:600;color:#475467;margin-bottom:5px;">Status · สถานะ</label>
+              <select value="{{ draft.status }}" onChange="{{ onStatus }}" style="width:100%;padding:9px 11px;border:1px solid #d0d5dd;border-radius:8px;font-size:13px;background:#fff;outline:none;cursor:pointer;" style-focus="border-color:var(--accent,#2563a8);box-shadow:0 0 0 3px var(--accent-soft,#eaf1fa);">
+                <sc-for list="{{ statusOptions }}" as="o" hint-placeholder-count="5"><option value="{{ o.value }}">{{ o.label }}</option></sc-for>
+              </select>
+            </div>
+            <div>
+              <label style="display:block;font-size:11.5px;font-weight:600;color:#475467;margin-bottom:5px;">Env. · สภาพแวดล้อม</label>
+              <select value="{{ draft.env }}" onChange="{{ onEnv }}" style="width:100%;padding:9px 11px;border:1px solid #d0d5dd;border-radius:8px;font-size:13px;background:#fff;outline:none;cursor:pointer;" style-focus="border-color:var(--accent,#2563a8);box-shadow:0 0 0 3px var(--accent-soft,#eaf1fa);">
+                <sc-for list="{{ envOptions }}" as="o" hint-placeholder-count="4"><option value="{{ o.value }}">{{ o.label }}</option></sc-for>
+              </select>
+            </div>
+          </div>
+
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:13px;">
+            <div>
+              <label style="display:block;font-size:11.5px;font-weight:600;color:#475467;margin-bottom:5px;">Date · วันที่</label>
+              <input type="date" value="{{ draft.date }}" onInput="{{ onDate }}" style="width:100%;padding:9px 11px;border:1px solid #d0d5dd;border-radius:8px;font-size:13px;outline:none;font-family:'IBM Plex Mono',monospace;" style-focus="border-color:var(--accent,#2563a8);box-shadow:0 0 0 3px var(--accent-soft,#eaf1fa);">
+            </div>
+            <div>
+              <label style="display:block;font-size:11.5px;font-weight:600;color:#475467;margin-bottom:5px;">Remark · หมายเหตุ</label>
+              <input value="{{ draft.remark }}" onInput="{{ onRemark }}" placeholder="เช่น รอบ 30/6" style="width:100%;padding:9px 11px;border:1px solid #d0d5dd;border-radius:8px;font-size:13px;outline:none;" style-focus="border-color:var(--accent,#2563a8);box-shadow:0 0 0 3px var(--accent-soft,#eaf1fa);">
+            </div>
+          </div>
+
+          <div style="display:flex;align-items:center;gap:8px;font-size:11.5px;color:#667085;background:#f9fafb;border:1px solid #eef0f3;border-radius:8px;padding:9px 11px;">
+            <span style="flex:0 0 auto;">{{ saveTargetIcon }}</span>
+            <span>{{ saveTargetHint }}</span>
+          </div>
+        </div>
+
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;padding:15px 22px;border-top:1px solid #eef0f3;background:#fafbfc;">
+          <sc-if value="{{ isEditing }}" hint-placeholder-val="{{ false }}">
+            <button onClick="{{ onDelete }}" style="padding:9px 14px;border-radius:8px;font-size:12.5px;font-weight:600;border:1px solid #f0d0ca;background:#fff;color:#a83b2b;cursor:pointer;" style-hover="background:#fbe9e6;">Delete · ลบ</button>
+          </sc-if>
+          <sc-if value="{{ isNew }}" hint-placeholder-val="{{ true }}"><span></span></sc-if>
+          <div style="display:flex;gap:9px;">
+            <button onClick="{{ onClose }}" style="padding:9px 16px;border-radius:8px;font-size:12.5px;font-weight:600;border:1px solid #d0d5dd;background:#fff;color:#344054;cursor:pointer;" style-hover="background:#f2f4f7;">Cancel</button>
+            <button onClick="{{ onSaveDraft }}" style="padding:9px 18px;border-radius:8px;font-size:12.5px;font-weight:600;border:1px solid var(--accent,#2563a8);background:var(--accent,#2563a8);color:#fff;cursor:pointer;box-shadow:0 1px 2px rgba(37,99,168,.25);" style-hover="filter:brightness(1.07);">{{ saveBtnLabel }}</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </sc-if>
+
+  <!-- ===== GOOGLE CONNECT MODAL ===== -->
+  <sc-if value="{{ gOpen }}" hint-placeholder-val="{{ false }}">
+    <div onClick="{{ onCloseGoogle }}" style="position:fixed;inset:0;background:rgba(16,24,40,.45);display:flex;align-items:flex-start;justify-content:center;padding:40px 20px;z-index:70;animation:fadeIn .15s ease;overflow:auto;">
+      <div onClick="{{ stop }}" style="background:#fff;border-radius:14px;width:100%;max-width:620px;box-shadow:0 24px 60px rgba(16,24,40,.28);animation:popIn .18s cubic-bezier(.16,1,.3,1);overflow:hidden;">
+        <div style="display:flex;align-items:center;justify-content:space-between;padding:18px 22px;border-bottom:1px solid #eef0f3;">
+          <div style="display:flex;align-items:center;gap:10px;">
+            <div style="width:30px;height:30px;border-radius:8px;background:#e7f4ec;display:flex;align-items:center;justify-content:center;font-size:15px;">☁</div>
+            <div>
+              <div style="font-size:15px;font-weight:600;">เชื่อมต่อ Google Sheet</div>
+              <div style="font-size:12px;color:#667085;">Connect a Google Sheet from Google Drive</div>
+            </div>
+          </div>
+          <button onClick="{{ onCloseGoogle }}" style="width:30px;height:30px;border-radius:8px;border:none;background:#f2f4f7;color:#667085;cursor:pointer;font-size:16px;line-height:1;" style-hover="background:#e4e7ec;">×</button>
+        </div>
+
+        <div style="padding:20px 22px;display:flex;flex-direction:column;gap:16px;max-height:66vh;overflow:auto;">
+
+          <div style="border:1px solid #e4e7ec;border-radius:10px;overflow:hidden;">
+            <button onClick="{{ onToggleHelp }}" style="width:100%;display:flex;align-items:center;justify-content:space-between;gap:8px;padding:11px 14px;background:#f9fafb;border:none;cursor:pointer;text-align:left;">
+              <span style="font-size:12.5px;font-weight:600;color:#344054;">วิธีสร้าง Client ID + API Key (ทำครั้งแรกครั้งเดียว)</span>
+              <span style="font-size:12px;color:#667085;font-weight:600;">{{ helpToggle }}</span>
+            </button>
+            <sc-if value="{{ showHelp }}" hint-placeholder-val="{{ true }}">
+              <div style="padding:14px 16px;border-top:1px solid #eef0f3;font-size:12.5px;color:#475467;line-height:1.7;">
+                <ol style="margin:0;padding-left:18px;display:flex;flex-direction:column;gap:7px;">
+                  <li>เปิด <b>Google Cloud Console</b> → สร้างหรือเลือก Project</li>
+                  <li><b>APIs &amp; Services → Library</b> → เปิดใช้งาน <b>Google Sheets API</b> และ <b>Google Picker API</b></li>
+                  <li><b>Credentials → Create credentials → API key</b> → คัดลอกค่า API Key</li>
+                  <li><b>Create credentials → OAuth client ID</b> → เลือกชนิด <b>Web application</b></li>
+                  <li>ใน <b>Authorized JavaScript origins</b> เพิ่ม origin นี้:
+                    <div style="display:flex;align-items:center;gap:8px;margin-top:6px;">
+                      <code style="flex:1;font-family:'IBM Plex Mono',monospace;font-size:11.5px;background:#f2f4f7;border:1px solid #e4e7ec;border-radius:6px;padding:6px 9px;word-break:break-all;color:#1d2433;">{{ originText }}</code>
+                      <button onClick="{{ onCopyOrigin }}" style="flex:0 0 auto;padding:6px 10px;border-radius:6px;border:1px solid #d0d5dd;background:#fff;font-size:11.5px;font-weight:600;color:#344054;cursor:pointer;" style-hover="background:#f2f4f7;">คัดลอก</button>
+                    </div>
+                  </li>
+                  <li>ตั้งค่า <b>OAuth consent screen</b> และเพิ่มอีเมลของคุณใน <b>Test users</b></li>
+                  <li>วาง <b>Client ID</b> + <b>API Key</b> ด้านล่าง แล้วกดปุ่ม Connect</li>
+                </ol>
+              </div>
+            </sc-if>
+          </div>
+
+          <div style="display:flex;flex-direction:column;gap:12px;">
+            <div>
+              <label style="display:block;font-size:11.5px;font-weight:600;color:#475467;margin-bottom:5px;">OAuth Client ID</label>
+              <input value="{{ clientId }}" onInput="{{ onClientId }}" placeholder="xxxxxxxx.apps.googleusercontent.com" style="width:100%;padding:9px 11px;border:1px solid #d0d5dd;border-radius:8px;font-size:12.5px;outline:none;font-family:'IBM Plex Mono',monospace;" style-focus="border-color:var(--accent,#2563a8);box-shadow:0 0 0 3px var(--accent-soft,#eaf1fa);">
+            </div>
+            <div>
+              <label style="display:block;font-size:11.5px;font-weight:600;color:#475467;margin-bottom:5px;">API Key</label>
+              <input value="{{ apiKey }}" onInput="{{ onApiKey }}" placeholder="AIza…" style="width:100%;padding:9px 11px;border:1px solid #d0d5dd;border-radius:8px;font-size:12.5px;outline:none;font-family:'IBM Plex Mono',monospace;" style-focus="border-color:var(--accent,#2563a8);box-shadow:0 0 0 3px var(--accent-soft,#eaf1fa);">
+            </div>
+            <button onClick="{{ onAuthorize }}" style="align-self:flex-start;padding:9px 18px;border-radius:8px;font-size:12.5px;font-weight:600;border:1px solid var(--accent,#2563a8);background:var(--accent,#2563a8);color:#fff;cursor:pointer;" style-hover="filter:brightness(1.07);">{{ authBtnLabel }}</button>
+          </div>
+
+          <sc-if value="{{ authed }}" hint-placeholder-val="{{ false }}">
+            <div style="border-top:1px solid #eef0f3;padding-top:16px;display:flex;flex-direction:column;gap:12px;">
+              <div style="font-size:12.5px;font-weight:600;color:#344054;">เลือก Google Sheet ที่ต้องการ</div>
+              <div>
+                <label style="display:block;font-size:11.5px;font-weight:600;color:#475467;margin-bottom:5px;">วางลิงก์หรือ ID ของ Sheet</label>
+                <div style="display:flex;gap:8px;">
+                  <input value="{{ sheetUrlInput }}" onInput="{{ onSheetUrl }}" placeholder="https://docs.google.com/spreadsheets/d/…" style="flex:1;min-width:0;padding:9px 11px;border:1px solid #d0d5dd;border-radius:8px;font-size:12.5px;outline:none;font-family:'IBM Plex Mono',monospace;" style-focus="border-color:var(--accent,#2563a8);box-shadow:0 0 0 3px var(--accent-soft,#eaf1fa);">
+                  <button onClick="{{ onLoadFromUrl }}" style="flex:0 0 auto;padding:9px 16px;border-radius:8px;font-size:12.5px;font-weight:600;border:1px solid var(--accent,#2563a8);background:var(--accent,#2563a8);color:#fff;cursor:pointer;" style-hover="filter:brightness(1.07);">โหลด</button>
+                </div>
+              </div>
+              <div style="display:flex;align-items:center;gap:10px;color:#98a2b3;font-size:11.5px;">
+                <div style="flex:1;height:1px;background:#eef0f3;"></div>หรือ<div style="flex:1;height:1px;background:#eef0f3;"></div>
+              </div>
+              <button onClick="{{ onOpenPicker }}" style="align-self:flex-start;display:inline-flex;align-items:center;gap:7px;padding:9px 16px;border-radius:8px;font-size:12.5px;font-weight:600;border:1px solid #d0d5dd;background:#fff;color:#344054;cursor:pointer;" style-hover="background:#f9fafb;border-color:#b9c0cc;">📁 เลือกจาก Google Drive</button>
+            </div>
+          </sc-if>
+        </div>
+      </div>
+    </div>
+  </sc-if>
+
+  <!-- ===== TOAST ===== -->
+  <sc-if value="{{ hasToast }}" hint-placeholder-val="{{ false }}">
+    <div style="position:fixed;bottom:24px;left:50%;transform:translateX(-50%);z-index:80;animation:toastIn .2s ease;">
+      <div style="{{ toastStyle }}">
+        <span>{{ toastIcon }}</span><span>{{ toastMsg }}</span>
+      </div>
+    </div>
+  </sc-if>
+
+  <!-- hidden input: import xlsx → overwrite Sheet -->
+  <input ref="{{ importInputRef }}" type="file" accept=".xlsx,.xls" onChange="{{ onImportInput }}" style="display:none;">
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1280,&quot;height&quot;:860},&quot;accentColor&quot;:{&quot;editor&quot;:&quot;color&quot;,&quot;default&quot;:&quot;#2563a8&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;options&quot;:[&quot;#2563a8&quot;,&quot;#0a6b5e&quot;,&quot;#5b46b0&quot;,&quot;#b4531f&quot;]},&quot;density&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;default&quot;:&quot;Comfortable&quot;,&quot;options&quot;:[&quot;Comfortable&quot;,&quot;Compact&quot;],&quot;tsType&quot;:&quot;string&quot;}}">
+class Component extends DCLogic {
+  static STATUS = {
+    Design:  {en:'Design',  th:'ออกแบบ',       text:'#6b4bb0', bg:'#efeafa', dot:'#8a63d2'},
+    Waiting: {en:'Waiting', th:'รอดำเนินการ',  text:'#8a5a12', bg:'#fbf3e1', dot:'#d39b2e'},
+    Develop: {en:'Develop', th:'กำลังพัฒนา',   text:'#1c5fa8', bg:'#e8f0fa', dot:'#3a7bd0'},
+    Reject:  {en:'Reject',  th:'ตีกลับ',       text:'#a83b2b', bg:'#fbe9e6', dot:'#d15842'},
+    Done:    {en:'Done',    th:'เสร็จสิ้น',    text:'#1f7a4d', bg:'#e7f4ec', dot:'#2e9e63'},
+  };
+  static STATUS_ORDER = ['Design','Waiting','Develop','Reject','Done'];
+  static ENV = {
+    DEV:        {en:'DEV',        th:'พัฒนา',     text:'#475467', bg:'#eef0f3'},
+    UAT:        {en:'UAT',        th:'ทดสอบ',     text:'#855a12', bg:'#fbf3e1'},
+    PRODUCTION: {en:'PRODUCTION', th:'ใช้งานจริง', text:'#0a6b5e', bg:'#e2f4f1'},
+  };
+  static ENV_ORDER = ['DEV','UAT','PRODUCTION'];
+  static ERRORS = [
+    ['1001','Not Found Data'],['1002','Duplicate Data'],['1003','Invalid Data'],
+    ['2001','Data Verification Failed'],['2002','Invalid Status Code'],
+    ['2003','Invalid Excel File Format'],['2004','No Data Found in File'],
+  ];
+  static J = 'https://ktbinnovation.atlassian.net/browse/';
+
+  state = {
+    tasks: [
+      {id:1, title:'รองรับสิทธิ์ข้าราชการ', card:Component.J+'HEDP-9899', status:'Done', env:'PRODUCTION', date:'', remark:''},
+      {id:2, title:'รองรับสิทธิ์ กทม', card:Component.J+'HEDP-12903', status:'Done', env:'PRODUCTION', date:'', remark:''},
+    ],
+    view: 'table',
+    filter: 'all',
+    page: 1,
+    envFilter: 'all',
+    search: '',
+    connected: false,
+    fileName: 'NHSO_TASK.xlsx · sample',
+    lastSync: null,
+    busy: false,
+    gOpen: false,
+    gStep: 'creds',
+    authed: false,
+    clientId: '',
+    apiKey: '',
+    spreadsheetName: '',
+    sheetUrlInput: '',
+    showHelp: true,
+    editorOpen: false,
+    editing: null,
+    draft: {title:'',card:'',status:'Design',env:'',date:'',remark:''},
+    toast: null,
+  };
+
+  // ---------- lifecycle ----------
+  componentDidMount(){
+    this.applyVars();
+    try{
+      const cid = localStorage.getItem('nhso_gcid') || '';
+      const key = localStorage.getItem('nhso_gkey') || '';
+      const sid = localStorage.getItem('nhso_sid') || '';
+      if(cid || key || sid) this.setState({clientId:cid, apiKey:key, sheetUrlInput: sid});
+    }catch(_){}
+    this.ensureGoogle().catch(() => {});
+    this._onFocus = () => { if(this.spreadsheetId) this.gLoad(this.spreadsheetId, true); };
+    window.addEventListener('focus', this._onFocus);
+  }
+  componentDidUpdate(){ this.applyVars(); }
+  componentWillUnmount(){ window.removeEventListener('focus', this._onFocus); if(this._tt) clearTimeout(this._tt); }
+  rootRef = (el) => { this.root = el; this.applyVars(); };
+  applyVars(){
+    if(!this.root) return;
+    const accent = this.props.accentColor || '#2563a8';
+    this.root.style.setProperty('--accent', accent);
+    this.root.style.setProperty('--accent-soft', accent + '1f');
+    this.root.style.setProperty('--rowpad', (this.props.density === 'Compact') ? '7px 12px' : '11px 12px');
+  }
+  openInputRef = (el) => { this.openInput = el; };
+  importInputRef = (el) => { this.importInput = el; };
+
+  // ---------- helpers ----------
+  fmtDate(v){
+    if(v == null || v === '') return '';
+    if(v instanceof Date) return v.toISOString().slice(0,10);
+    if(typeof v === 'number'){ const d = new Date(Date.UTC(1899,11,30) + Math.round(v)*86400000); return d.toISOString().slice(0,10); }
+    const s = String(v).trim();
+    const m = s.match(/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{2,4})$/);
+    if(m){ let y=m[3]; if(y.length===2) y='20'+y; return `${y}-${String(m[1]).padStart(2,'0')}-${String(m[2]).padStart(2,'0')}`; }
+    return s;
+  }
+  chip(m){ return {color:m.text, background:m.bg, padding:'3px 9px', borderRadius:'999px', fontSize:'11.5px', fontWeight:600, whiteSpace:'nowrap', display:'inline-flex', alignItems:'center', gap:'5px', lineHeight:1.4}; }
+  noEnvChip(){ return {color:'#aab2bd', background:'#f4f5f7', padding:'3px 9px', borderRadius:'999px', fontSize:'11.5px', fontWeight:600, display:'inline-flex', alignItems:'center', lineHeight:1.4}; }
+
+  fmtDateLong(v){
+    const iso = this.fmtDate(v);
+    if(!iso) return '';
+    const m = iso.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+    if(!m) return iso;
+    const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+    return parseInt(m[3],10) + ' ' + months[parseInt(m[2],10)-1] + ' ' + m[1];
+  }
+  envTextColor(env){
+    const map = {PRODUCTION:'#1f7a4d', UAT:'#c2410c', DEV:'#475467'};
+    return map[env] || '#475467';
+  }
+
+  mkTask(t){
+    const sm = Component.STATUS[t.status] || {en:t.status||'—', th:'', text:'#475467', bg:'#eef0f3', dot:'#98a2b3'};
+    const em = t.env ? (Component.ENV[t.env] || {en:t.env, th:'', text:'#475467', bg:'#eef0f3'}) : null;
+    const cardId = t.card ? String(t.card).split('/').pop() : '';
+    const iso = this.fmtDate(t.date);
+    return {
+      ...t,
+      cardId: cardId || '—',
+      hasCard: !!t.card,
+      noCard: !t.card,
+      statusEn: sm.en, statusTh: sm.th,
+      dotStyle: {width:'8px', height:'8px', borderRadius:'999px', flexShrink:0, background: sm.dot},
+      statusChipStyle: this.chip(sm),
+      statusPillDot: {width:'6px', height:'6px', borderRadius:'999px', flexShrink:0, background: sm.dot},
+      hasEnv: !!em,
+      noEnv: !em,
+      envLabel: em ? em.en : '—',
+      envChipStyle: em ? this.chip(em) : this.noEnvChip(),
+      envTextStyle: {fontSize:'13px', fontWeight:700, letterSpacing:'.02em', color: this.envTextColor(t.env)},
+      dateLabel: iso || '—',
+      hasDate: !!iso,
+      dateLong: this.fmtDateLong(t.date),
+      hasRemark: !!(t.remark && String(t.remark).trim()),
+      remark: t.remark || '',
+      remarkLabel: t.remark ? t.remark : '—',
+      onEdit: () => this.openEditor(t.id),
+      onEditBtn: (e) => { e.stopPropagation(); this.openEditor(t.id); },
+      onDeleteBtn: (e) => { e.stopPropagation(); this.deleteById(t.id); },
+    };
+  }
+
+  // ---------- file IO ----------
+  ensureXLSX(){ if(!window.XLSX){ this.toast('Spreadsheet engine still loading… try again','error'); return false; } return true; }
+
+  rowsFromAoa(aoa){
+    if(!aoa || !aoa.length) throw {code:2004};
+    const head = (aoa[0]||[]).map(x => String(x).trim().toLowerCase());
+    const ci = (n) => head.findIndex(hh => hh.startsWith(n));
+    const iT=ci('title'), iC=ci('card'), iS=ci('status'), iE=ci('env'), iD=ci('date'), iR=ci('remark');
+    if(iT < 0) throw {code:2003};
+    const rows = [];
+    let id = 1;
+    for(let r=1; r<aoa.length; r++){
+      const row = aoa[r] || [];
+      const title = String(row[iT]==null?'':row[iT]).trim();
+      if(!title) continue;
+      const envRaw = iE>=0 ? String(row[iE]==null?'':row[iE]).trim().toUpperCase() : '';
+      rows.push({
+        id: id++,
+        title,
+        card: iC>=0 ? String(row[iC]==null?'':row[iC]).trim() : '',
+        status: iS>=0 ? String(row[iS]==null?'':row[iS]).trim() : '',
+        env: Component.ENV[envRaw] ? envRaw : (envRaw || ''),
+        date: iD>=0 ? this.fmtDate(row[iD]) : '',
+        remark: iR>=0 ? String(row[iR]==null?'':row[iR]).trim() : '',
+      });
+    }
+    if(!rows.length) throw {code:2004};
+    return rows;
+  }
+  mapTasks(wb){
+    const X = window.XLSX;
+    const name = wb.SheetNames.includes('Task') ? 'Task' : wb.SheetNames[0];
+    const aoa = X.utils.sheet_to_json(wb.Sheets[name], {header:1, raw:true, defval:''});
+    return this.rowsFromAoa(aoa);
+  }
+
+  buildWb(){
+    const X = window.XLSX;
+    const header = ['Title','Card','Status','Env.','Date','Remark'];
+    const aoa = [header, ...this.state.tasks.map(t => [t.title, t.card, t.status, t.env, t.date, t.remark])];
+    const ws = X.utils.aoa_to_sheet(aoa);
+    ws['!cols'] = [{wch:52},{wch:46},{wch:12},{wch:12},{wch:12},{wch:18}];
+    let wb = this.wb;
+    if(!wb || !wb.SheetNames){ wb = X.utils.book_new(); }
+    if(wb.SheetNames.includes('Task')) wb.Sheets['Task'] = ws;
+    else X.utils.book_append_sheet(wb, ws, 'Task');
+    if(!wb.SheetNames.includes('ErrorCode')){
+      const ews = X.utils.aoa_to_sheet([['Error Code','Error Message'], ...Component.ERRORS]);
+      X.utils.book_append_sheet(wb, ews, 'ErrorCode');
+    }
+    return wb;
+  }
+
+  // ---------- Google Sheets (Drive) ----------
+  ensureGoogle(){
+    if(this._gp) return this._gp;
+    this._gp = new Promise((resolve, reject) => {
+      let n = 0;
+      const tick = () => {
+        if(window.gapi && window.google && window.google.accounts && window.google.accounts.oauth2){
+          window.gapi.load('client:picker', { callback: () => resolve(true), onerror: () => reject(new Error('ไม่สามารถโหลด Google API ได้')) });
+        } else if(++n > 150){ reject(new Error('Google libraries ไม่โหลด — ตรวจสอบเครือข่าย/origin')); }
+        else setTimeout(tick, 100);
+      };
+      tick();
+    });
+    return this._gp;
+  }
+
+  getToken(prompt){
+    return new Promise((resolve, reject) => {
+      if(!this._tokenClient || this._tokenClientId !== this.state.clientId){
+        this._tokenClient = window.google.accounts.oauth2.initTokenClient({
+          client_id: (this.state.clientId||'').trim(),
+          scope: 'https://www.googleapis.com/auth/spreadsheets https://www.googleapis.com/auth/drive.file',
+          callback: (resp) => {
+            if(resp && resp.error){ if(this._tkr) this._tkr(resp); return; }
+            this._token = resp.access_token;
+            this._tokenExp = Date.now() + ((resp.expires_in || 3500) * 1000);
+            window.gapi.client.setToken({access_token: resp.access_token});
+            if(this._tka) this._tka(resp.access_token);
+          },
+        });
+        this._tokenClientId = this.state.clientId;
+      }
+      this._tka = resolve; this._tkr = reject;
+      try { this._tokenClient.requestAccessToken({prompt: prompt || ''}); }
+      catch(e){ reject(e); }
+    });
+  }
+
+  async ensureToken(){
+    if(this._token && Date.now() < this._tokenExp - 60000){ window.gapi.client.setToken({access_token:this._token}); return this._token; }
+    return this.getToken('');
+  }
+
+  async initClient(){
+    const apiKey = (this.state.apiKey||'').trim();
+    if(this._initedKey !== apiKey){
+      await window.gapi.client.init({ apiKey, discoveryDocs:['https://sheets.googleapis.com/$discovery/rest?version=v4'] });
+      this._initedKey = apiKey;
+    }
+  }
+
+  extractId(s){
+    if(!s) return '';
+    const m = String(s).match(/\/spreadsheets\/d\/([a-zA-Z0-9-_]+)/);
+    if(m) return m[1];
+    const m2 = String(s).trim().match(/^[a-zA-Z0-9-_]{20,}$/);
+    return m2 ? m2[0] : '';
+  }
+
+  gErr(e){
+    const msg = (e && e.result && e.result.error && e.result.error.message) || (e && e.message) || (e && e.error) || (e && e.type) || 'Google API error';
+    this.toast('Google: ' + msg, 'error');
+  }
+
+  onConnect(){ this.setState({ gOpen:true, gStep: this.state.authed ? 'pick' : 'creds' }); }
+  closeGoogle(){ this.setState({gOpen:false}); }
+  setGField(k, v){ this.setState({[k]: v}); }
+
+  async gAuthorize(){
+    const cid = (this.state.clientId||'').trim(), key = (this.state.apiKey||'').trim();
+    if(!cid || !key){ this.toast('กรอก Client ID และ API Key ก่อน · enter Client ID & API Key','error'); return; }
+    this.setState({busy:true});
+    try{
+      await this.ensureGoogle();
+      await this.initClient();
+      await this.getToken('');
+      try{ localStorage.setItem('nhso_gcid', cid); localStorage.setItem('nhso_gkey', key); }catch(_){}
+      this.setState({authed:true, gStep:'pick', busy:false});
+      this.toast('เชื่อมต่อ Google สำเร็จ · authorized','ok');
+    }catch(e){ this.setState({busy:false}); this.gErr(e); }
+  }
+
+  async gLoad(spreadsheetId, silent){
+    if(!spreadsheetId) return;
+    this.setState({busy:true});
+    try{
+      await this.ensureGoogle();
+      await this.initClient();
+      await this.ensureToken();
+      const meta = await window.gapi.client.sheets.spreadsheets.get({spreadsheetId, fields:'properties.title,sheets.properties.title'});
+      const title = meta.result.properties.title;
+      const tabs = (meta.result.sheets||[]).map(s => s.properties.title);
+      const tab = tabs.indexOf('Task') >= 0 ? 'Task' : (tabs[0] || 'Sheet1');
+      const resp = await window.gapi.client.sheets.spreadsheets.values.get({spreadsheetId, range: "'" + tab + "'"});
+      const tasks = this.rowsFromAoa(resp.result.values || []);
+      this.spreadsheetId = spreadsheetId; this.sheetTab = tab;
+      try{ localStorage.setItem('nhso_sid', spreadsheetId); }catch(_){}
+      this.setState({tasks, connected:true, authed:true, fileName:title, spreadsheetName:title, lastSync:Date.now(), busy:false, gOpen:false, page:1});
+      if(!silent) this.toast('โหลดจาก Google Sheet · ' + title,'ok');
+    }catch(e){
+      this.setState({busy:false});
+      if(e && e.code) return this.errToast(e.code);
+      this.gErr(e);
+    }
+  }
+
+  async gWrite(silent){
+    if(!this.spreadsheetId){ this.toast('ยังไม่ได้เชื่อม Google Sheet · connect a Sheet first','warn'); return false; }
+    this.setState({busy:true});
+    try{
+      await this.ensureGoogle();
+      await this.initClient();
+      await this.ensureToken();
+      const header = ['Title','Card','Status','Env.','Date','Remark'];
+      const values = [header, ...this.state.tasks.map(t => [t.title, t.card, t.status, t.env, t.date, t.remark])];
+      await window.gapi.client.sheets.spreadsheets.values.clear({spreadsheetId:this.spreadsheetId, range:"'" + this.sheetTab + "'"});
+      await window.gapi.client.sheets.spreadsheets.values.update({spreadsheetId:this.spreadsheetId, range:"'" + this.sheetTab + "'!A1", valueInputOption:'RAW', resource:{values}});
+      this.setState({busy:false, lastSync:Date.now()});
+      if(!silent) this.toast('บันทึกลง Google Sheet แล้ว · saved','ok');
+      return true;
+    }catch(e){ this.setState({busy:false}); this.gErr(e); return false; }
+  }
+
+  loadFromUrl(){
+    const id = this.extractId(this.state.sheetUrlInput);
+    if(!id){ this.toast('ลิงก์หรือ ID ไม่ถูกต้อง · invalid Sheet link/ID','error'); return; }
+    this.gLoad(id, false);
+  }
+
+  openPicker(){
+    this.ensureGoogle()
+      .then(() => this.initClient())
+      .then(() => this.ensureToken())
+      .then((token) => {
+        const view = new window.google.picker.View(window.google.picker.ViewId.SPREADSHEETS);
+        const picker = new window.google.picker.PickerBuilder()
+          .setOAuthToken(token)
+          .setDeveloperKey((this.state.apiKey||'').trim())
+          .addView(view)
+          .setCallback((data) => {
+            if(data.action === window.google.picker.Action.PICKED && data.docs && data.docs[0]){
+              const doc = data.docs[0];
+              this.setState({sheetUrlInput: doc.url || doc.id});
+              this.gLoad(doc.id, false);
+            }
+          })
+          .build();
+        picker.setVisible(true);
+      })
+      .catch((e) => this.gErr(e));
+  }
+
+  onReload(){ if(this.spreadsheetId) this.gLoad(this.spreadsheetId, false); else this.toast('ยังไม่ได้เชื่อม Google Sheet · using sample data','warn'); }
+
+  onImport(){ if(this.importInput) this.importInput.click(); }
+  async onImportInput(e){
+    const file = e.target.files && e.target.files[0]; e.target.value='';
+    if(!file || !this.ensureXLSX()) return;
+    if(!this.spreadsheetId){ this.toast('เชื่อม Google Sheet ก่อนนำเข้า · connect a Sheet first','warn'); return; }
+    try{
+      const buf = await file.arrayBuffer();
+      const wb = window.XLSX.read(buf, {type:'array', cellDates:true});
+      const tasks = this.mapTasks(wb);
+      this.setState({tasks, page:1}, async () => {
+        const ok = await this.gWrite(true);
+        if(ok) this.toast('นำเข้า ' + file.name + ' และเขียนทับ Sheet แล้ว · imported','ok');
+      });
+    }catch(err){ this.errToast(err && err.code ? err.code : 2003); }
+  }
+
+  onCopyOrigin(){
+    const o = window.location.origin;
+    try{ navigator.clipboard.writeText(o); this.toast('คัดลอก origin แล้ว · copied','ok'); }
+    catch(_){ this.toast(o,'ok'); }
+  }
+
+  // Export: always download a fresh .xlsx copy of current tasks
+  onExport(){
+    if(!this.ensureXLSX()) return;
+    try{
+      const wb = this.buildWb();
+      const out = window.XLSX.write(wb, {type:'array', bookType:'xlsx'});
+      const blob = new Blob([out], {type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'});
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      let base = (this.state.fileName || 'NHSO_TASK.xlsx').replace(/\s*·.*$/,'').replace(/\.xlsx?$/i,'') || 'NHSO_TASK';
+      const d = new Date();
+      const stamp = d.getFullYear() + String(d.getMonth()+1).padStart(2,'0') + String(d.getDate()).padStart(2,'0');
+      a.href = url; a.download = base + '_' + stamp + '.xlsx';
+      document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url);
+      this.toast('Exported ' + a.download + ' · ส่งออกไฟล์แล้ว','ok');
+    }catch(e){ this.toast('Export failed: ' + (e.message||e),'error'); }
+  }
+
+  errToast(code){
+    const row = Component.ERRORS.find(r => r[0] === String(code)) || ['2003','Invalid Excel File Format'];
+    this.toast('Error ' + row[0] + ' · ' + row[1],'error');
+  }
+
+  // ---------- editor ----------
+  openEditor(id){
+    const t = this.state.tasks.find(x => x.id === id);
+    if(!t) return;
+    this.setState({editorOpen:true, editing:id, draft:{...t}});
+  }
+  newTask(status){
+    this.setState({editorOpen:true, editing:null, draft:{title:'',card:Component.J,status:status||'Design',env:'',date:'',remark:''}});
+  }
+  closeEditor(){ this.setState({editorOpen:false, editing:null}); }
+  setField(k, v){ this.setState(s => ({draft:{...s.draft, [k]:v}})); }
+
+  saveDraft(){
+    const d = this.state.draft;
+    if(!d.title || !d.title.trim()){ this.toast('Title is required · กรุณากรอกชื่องาน','error'); return; }
+    let tasks = this.state.tasks.slice();
+    if(this.state.editing != null){
+      tasks = tasks.map(t => t.id === this.state.editing ? {...d, id:this.state.editing} : t);
+    } else {
+      const id = tasks.reduce((m,t) => Math.max(m, t.id), 0) + 1;
+      tasks = [...tasks, {...d, id}];
+    }
+    this.setState({tasks, editorOpen:false, editing:null}, () => this.persist(true));
+  }
+  deleteTask(){
+    if(this.state.editing == null) return;
+    const tasks = this.state.tasks.filter(t => t.id !== this.state.editing);
+    this.setState({tasks, editorOpen:false, editing:null}, () => this.persist(false));
+  }
+  deleteById(id){
+    const t = this.state.tasks.find(x => x.id === id);
+    if(!window.confirm('Delete this task? · ลบงานนี้?\n\n' + (t ? t.title : ''))) return;
+    const tasks = this.state.tasks.filter(x => x.id !== id);
+    this.setState({tasks}, () => this.persist());
+    this.toast('Deleted · ลบแล้ว','warn');
+  }
+  persist(){
+    if(this.spreadsheetId){ this.gWrite(false); }
+    else { this.toast('ยังไม่ได้เชื่อม Sheet — เก็บในแอปชั่วคราว · connect a Sheet to save','warn'); }
+  }
+
+  // ---------- toast ----------
+  toast(msg, type){
+    this.setState({toast:{msg, type:type||'ok'}});
+    if(this._tt) clearTimeout(this._tt);
+    this._tt = setTimeout(() => this.setState({toast:null}), 3000);
+  }
+
+  setView(v){ this.setState({view:v}); }
+
+  // ---------- render ----------
+  renderVals(){
+    const S = Component.STATUS, SO = Component.STATUS_ORDER, EO = Component.ENV_ORDER;
+    const tasks = this.state.tasks;
+    const total = tasks.length;
+
+    // metrics — progress over NON-production, NON-rejected tasks only
+    const active = tasks.filter(t => t.env !== 'PRODUCTION' && t.status !== 'Reject');
+    const activeDone = active.filter(t => t.status === 'Done').length;
+    const activeTotal = active.length;
+    const pct = activeTotal ? Math.round(activeDone / activeTotal * 100) : 0;
+    const prodCount = tasks.filter(t => t.env === 'PRODUCTION').length;
+    const rejectExcluded = tasks.filter(t => t.env !== 'PRODUCTION' && t.status === 'Reject').length;
+    const excludedNote = prodCount + ' shipped to prod' + (rejectExcluded ? (' · ' + rejectExcluded + ' rejected') : '') + ' · excluded';
+    const doneCount = tasks.filter(t => t.status === 'Done').length;
+    const openCount = total - doneCount;
+    const ringCirc = +(2 * Math.PI * 34).toFixed(2);
+    const ringOffset = +(ringCirc * (1 - pct/100)).toFixed(2);
+
+    // status bars
+    const statusCounts = {}; SO.forEach(k => statusCounts[k] = 0);
+    tasks.forEach(t => { if(statusCounts[t.status] != null) statusCounts[t.status]++; });
+    const maxStatus = Math.max(1, ...SO.map(k => statusCounts[k]));
+    const statusBars = SO.map(k => ({
+      label: S[k].en, th: S[k].th, count: statusCounts[k],
+      dotStyle: {width:'8px', height:'8px', borderRadius:'999px', flexShrink:0, background: S[k].dot},
+      barStyle: {width: (statusCounts[k]/maxStatus*100) + '%', height:'100%', background:S[k].dot, borderRadius:'999px'},
+    }));
+
+    // env bars
+    const envCounts = {DEV:0, UAT:0, PRODUCTION:0, none:0};
+    tasks.forEach(t => { if(envCounts[t.env] != null) envCounts[t.env]++; else if(!t.env) envCounts.none++; });
+    const maxEnv = Math.max(1, envCounts.DEV, envCounts.UAT, envCounts.PRODUCTION, envCounts.none);
+    const envMeta = {DEV:Component.ENV.DEV.dot||'#475467'};
+    const envBars = [
+      {key:'DEV', label:'DEV · พัฒนา', count:envCounts.DEV, color:'#3a7bd0'},
+      {key:'UAT', label:'UAT · ทดสอบ', count:envCounts.UAT, color:'#d39b2e'},
+      {key:'PRODUCTION', label:'PROD · ใช้งานจริง', count:envCounts.PRODUCTION, color:'#0a6b5e'},
+      {key:'none', label:'— none', count:envCounts.none, color:'#aab2bd'},
+    ].map(e => ({...e, barStyle:{width:(e.count/maxEnv*100)+'%', height:'100%', background:e.color, borderRadius:'999px'}}));
+
+    // search + env filter (shared)
+    const q = this.state.search.trim().toLowerCase();
+    const ef = this.state.envFilter;
+    const passShared = (t) => {
+      if(ef !== 'all'){ if(ef === 'none'){ if(t.env) return false; } else if(t.env !== ef) return false; }
+      if(q){ const hay = (t.title+' '+t.card+' '+t.remark).toLowerCase(); if(!hay.includes(q)) return false; }
+      return true;
+    };
+
+    // board columns
+    const boardTasks = tasks.filter(passShared);
+    const columns = SO.map(k => {
+      const list = boardTasks.filter(t => t.status === k).map(t => this.mkTask(t));
+      return {
+        key:k, label:S[k].en, th:S[k].th, count:list.length,
+        dotStyle:{width:'9px', height:'9px', borderRadius:'999px', flexShrink:0, background:S[k].dot},
+        tasks:list, isEmpty:list.length === 0,
+        onAdd: () => this.newTask(k),
+      };
+    });
+
+    // table rows (also apply status filter) + pagination
+    const fl = this.state.filter;
+    const allRows = tasks.filter(t => (fl === 'all' || t.status === fl) && passShared(t));
+    const PER = 20;
+    const pageCount = Math.max(1, Math.ceil(allRows.length / PER));
+    const page = Math.min(this.state.page, pageCount);
+    const startIdx = (page - 1) * PER;
+    const rows = allRows.slice(startIdx, startIdx + PER).map((t, i) => ({...this.mkTask(t), num: startIdx + i + 1}));
+    const rangeStart = allRows.length ? startIdx + 1 : 0;
+    const rangeEnd = startIdx + rows.length;
+    const pageItems = [];
+    for(let p = 1; p <= pageCount; p++){
+      pageItems.push({
+        n: p,
+        isCurrent: p === page,
+        style: {
+          minWidth:'32px', height:'32px', padding:'0 9px', borderRadius:'8px', cursor:'pointer',
+          fontSize:'12.5px', fontWeight:600, fontFamily:"'IBM Plex Mono',monospace",
+          border:'1px solid ' + (p === page ? 'var(--accent,#2563a8)' : '#d0d5dd'),
+          background: p === page ? 'var(--accent,#2563a8)' : '#fff',
+          color: p === page ? '#fff' : '#475467',
+        },
+        onClick: () => this.setState({page: p}),
+      });
+    }
+    const prevStyle = {minWidth:'32px', height:'32px', padding:'0 11px', borderRadius:'8px', fontSize:'12.5px', fontWeight:600, border:'1px solid #d0d5dd', background: page<=1?'#f6f7f9':'#fff', color: page<=1?'#cbd2da':'#475467', cursor: page<=1?'default':'pointer'};
+    const nextStyle = {minWidth:'32px', height:'32px', padding:'0 11px', borderRadius:'8px', fontSize:'12.5px', fontWeight:600, border:'1px solid #d0d5dd', background: page>=pageCount?'#f6f7f9':'#fff', color: page>=pageCount?'#cbd2da':'#475467', cursor: page>=pageCount?'default':'pointer'};
+
+    // filter chips
+    const chipBase = (active) => ({
+      display:'inline-flex', alignItems:'center', gap:'7px', padding:'6px 12px', borderRadius:'999px',
+      fontSize:'12.5px', fontWeight:600, cursor:'pointer',
+      border:'1px solid ' + (active ? 'var(--accent,#2563a8)' : '#d0d5dd'),
+      background: active ? 'var(--accent-soft,#eaf1fa)' : '#fff',
+      color: active ? 'var(--accent,#2563a8)' : '#475467',
+    });
+    const filterChips = [{key:'all', label:'All · ทั้งหมด', count:total, dot:'#98a2b3'}]
+      .concat(SO.map(k => ({key:k, label:S[k].en, count:statusCounts[k], dot:S[k].dot})))
+      .map(c => ({
+        label:c.label, count:c.count,
+        dotStyle:{width:'7px', height:'7px', borderRadius:'999px', flexShrink:0, background:c.dot},
+        style: chipBase(this.state.filter === c.key),
+        onClick: () => this.setState({filter:c.key, page:1}),
+      }));
+
+    // view toggle buttons
+    const segBtn = (on) => ({
+      padding:'6px 13px', borderRadius:'7px', fontSize:'12.5px', fontWeight:600, cursor:'pointer', border:'none',
+      background: on ? '#fff' : 'transparent',
+      color: on ? '#1d2433' : '#667085',
+      boxShadow: on ? '0 1px 2px rgba(16,24,40,.12)' : 'none',
+    });
+    const isBoard = this.state.view === 'board';
+
+    // editor
+    const d = this.state.draft;
+    const isEditing = this.state.editing != null;
+    const statusOptions = SO.map(k => ({value:k, label:S[k].en + ' · ' + S[k].th}));
+    const envOptions = [{value:'', label:'— (none) · ไม่มี'}].concat(EO.map(k => ({value:k, label:Component.ENV[k].en + ' · ' + Component.ENV[k].th})));
+
+    // toast
+    const tt = this.state.toast;
+    const toastBase = {display:'flex', alignItems:'center', gap:'10px', padding:'11px 16px', borderRadius:'10px', boxShadow:'0 8px 24px rgba(16,24,40,.18)', fontSize:'13px', fontWeight:500};
+    const toastStyleMap = {
+      ok:{...toastBase, background:'#1c2433', color:'#fff'},
+      warn:{...toastBase, background:'#85631a', color:'#fff'},
+      error:{...toastBase, background:'#a83b2b', color:'#fff'},
+    };
+    const toastIconMap = {ok:'✓', warn:'!', error:'⚠'};
+
+    // sync label
+    let syncLabel = 'sample data · ข้อมูลตัวอย่าง';
+    if(this.state.busy){ syncLabel = 'syncing… · กำลังซิงค์'; }
+    else if(this.state.connected && this.state.lastSync){
+      const dt = new Date(this.state.lastSync);
+      syncLabel = 'synced ' + dt.toLocaleTimeString([], {hour:'2-digit', minute:'2-digit', second:'2-digit'});
+    } else if(this.state.connected){ syncLabel = 'connected'; }
+
+    const saveTo = this.spreadsheetId ? ('writes to Google Sheet · ' + (this.state.spreadsheetName || 'connected sheet')) : 'connect a Google Sheet to save — otherwise kept in app only';
+
+    return {
+      rootRef:this.rootRef, importInputRef:this.importInputRef,
+
+      // header
+      connected:this.state.connected, notConnected:!this.state.connected,
+      fileName:this.state.fileName, syncLabel,
+      connectLabel:this.state.connected ? '☁ Google Sheet' : '☁ Connect Google Sheet',
+      onConnect:() => this.onConnect(), onReload:() => this.onReload(),
+      onImport:() => this.onImport(), onExport:() => this.onExport(), onNew:() => this.newTask(),
+      onImportInput:(e) => this.onImportInput(e),
+
+      // google modal
+      gOpen:this.state.gOpen, gStep:this.state.gStep, authed:this.state.authed,
+      isCredsStep:this.state.gStep === 'creds', isPickStep:this.state.gStep === 'pick',
+      clientId:this.state.clientId, apiKey:this.state.apiKey, sheetUrlInput:this.state.sheetUrlInput,
+      busy:this.state.busy, showHelp:this.state.showHelp,
+      helpToggle: this.state.showHelp ? 'ซ่อน' : 'แสดง',
+      originText: window.location.origin,
+      authBtnLabel: this.state.busy ? 'กำลังเชื่อมต่อ…' : (this.state.authed ? '✓ Authorized · เปลี่ยนบัญชี' : 'Connect · เชื่อมต่อ'),
+      onCloseGoogle:() => this.closeGoogle(),
+      onClientId:(e) => this.setGField('clientId', e.target.value),
+      onApiKey:(e) => this.setGField('apiKey', e.target.value),
+      onSheetUrl:(e) => this.setGField('sheetUrlInput', e.target.value),
+      onAuthorize:() => this.gAuthorize(),
+      onLoadFromUrl:() => this.loadFromUrl(),
+      onOpenPicker:() => this.openPicker(),
+      onToggleHelp:() => this.setState(s => ({showHelp:!s.showHelp})),
+      onCopyOrigin:() => this.onCopyOrigin(),
+
+      // kpis
+      total, pct, ringCirc, ringOffset,
+      activeDone, activeTotal, prodCount, doneCount, openCount, excludedNote,
+      statusBars, envBars,
+
+      // toolbar
+      onBoard:() => this.setView('board'), onTable:() => this.setView('table'),
+      boardBtnStyle:segBtn(isBoard), tableBtnStyle:segBtn(!isBoard),
+      viewHint: isBoard ? 'drag-free kanban · จัดกลุ่มตามสถานะ' : 'filter & sort · ตารางรายการ',
+      search:this.state.search, onSearch:(e) => this.setState({search:e.target.value, page:1}),
+      envFilter:this.state.envFilter, onEnvFilter:(e) => this.setState({envFilter:e.target.value, page:1}),
+
+      isBoard, isTable:!isBoard,
+      filterChips, columns, rows, noRows:rows.length === 0, rowCount:allRows.length,
+      rangeStart, rangeEnd, page, pageCount, pageItems, prevStyle, nextStyle,
+      showPager: pageCount > 1,
+      onPrev: () => this.setState(s => ({page: Math.max(1, s.page - 1)})),
+      onNext: () => this.setState(s => ({page: Math.min(pageCount, s.page + 1)})),
+
+      // editor modal
+      editorOpen:this.state.editorOpen,
+      editorTitle: isEditing ? 'Edit task · แก้ไขงาน' : 'New task · เพิ่มงาน',
+      editorSub: isEditing ? ('Card ' + (d.card ? String(d.card).split('/').pop() : '—')) : 'Add a task to the tracker',
+      isEditing, isNew:!isEditing,
+      saveBtnLabel: isEditing ? 'Save changes' : 'Add task',
+      draft:d, statusOptions, envOptions,
+      onTitle:(e) => this.setField('title', e.target.value),
+      onCard:(e) => this.setField('card', e.target.value),
+      onStatus:(e) => this.setField('status', e.target.value),
+      onEnv:(e) => this.setField('env', e.target.value),
+      onDate:(e) => this.setField('date', e.target.value),
+      onRemark:(e) => this.setField('remark', e.target.value),
+      onClose:() => this.closeEditor(), onSaveDraft:() => this.saveDraft(), onDelete:() => this.deleteTask(),
+      stop:(e) => e.stopPropagation(),
+      saveTargetIcon: this.spreadsheetId ? '☁' : '↪',
+      saveTargetHint: 'On save: ' + saveTo,
+
+      // toast
+      hasToast:!!tt,
+      toastMsg: tt ? tt.msg : '',
+      toastIcon: tt ? toastIconMap[tt.type] : '',
+      toastStyle: tt ? toastStyleMap[tt.type] : {},
+    };
+  }
+}
+</script>
+</body>
+</html>
