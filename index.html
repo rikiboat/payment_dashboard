@@ -60,7 +60,8 @@
 
       <button onClick="{{ onConnect }}" style="display:inline-flex;align-items:center;gap:6px;padding:8px 13px;border-radius:8px;font-size:12.5px;font-weight:600;border:1px solid #d0d5dd;background:#fff;color:#344054;cursor:pointer;" style-hover="background:#f9fafb;border-color:#b9c0cc;">{{ connectLabel }}</button>
       <button onClick="{{ onReload }}" title="Reload from Google Sheet" style="display:inline-flex;align-items:center;gap:6px;padding:8px 12px;border-radius:8px;font-size:12.5px;font-weight:600;border:1px solid #d0d5dd;background:#fff;color:#344054;cursor:pointer;" style-hover="background:#f9fafb;border-color:#b9c0cc;">↻ Reload</button>
-      <button onClick="{{ onExport }}" title="Export to .xlsx" style="display:inline-flex;align-items:center;gap:6px;padding:8px 12px;border-radius:8px;font-size:12.5px;font-weight:600;border:1px solid #d0d5dd;background:#fff;color:#344054;cursor:pointer;" style-hover="background:#f9fafb;border-color:#b9c0cc;">⤓ Export</button>
+      <button onClick="{{ onExport }}" title="Export to .xlsx" style="display:inline-flex;align-items:center;gap:6px;padding:8px 12px;border-radius:8px;font-size:12.5px;font-weight:600;border:1px solid #d0d5dd;background:#fff;color:#344054;cursor:pointer;" style-hover="background:#f9fafb;border-color:#b9c0cc;">⤓ Export</button>	
+	  <button onClick="{{ onSaveExcel }}" title="Save current changes to the Excel/Sheet file" style="{{ saveExcelStyle }}">{{ saveExcelLabel }}</button>																																		 
       <div style="width:1px;height:24px;background:#e4e7ec;"></div>
       <button onClick="{{ onNew }}" style="display:inline-flex;align-items:center;gap:6px;padding:8px 15px;border-radius:8px;font-size:12.5px;font-weight:600;border:1px solid var(--accent,#2563a8);background:var(--accent,#2563a8);color:#fff;cursor:pointer;box-shadow:0 1px 2px rgba(37,99,168,.25);" style-hover="filter:brightness(1.07);">+ New task</button>
     </div>
@@ -188,10 +189,10 @@
 
     <!-- ===== TABLE VIEW ===== -->
     <sc-if value="{{ isTable }}" hint-placeholder-val="{{ false }}">
-      <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:11px;flex-wrap:wrap;">
+      <!-- <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:11px;flex-wrap:wrap;">
         <div style="font-size:13px;color:#667085;">แสดง <b style="color:#1d2433;font-family:'IBM Plex Mono',monospace;">{{ rangeStart }}–{{ rangeEnd }}</b> จาก <b style="color:#1d2433;font-family:'IBM Plex Mono',monospace;">{{ rowCount }}</b> รายการ <span style="color:#aab2bd;">· {{ rangeStart }}–{{ rangeEnd }} of {{ rowCount }}</span></div>
         <button onClick="{{ onImport }}" style="display:inline-flex;align-items:center;gap:7px;padding:8px 15px;border-radius:8px;font-size:12.5px;font-weight:600;border:1px solid var(--accent,#2563a8);background:var(--accent-soft,#eaf1fa);color:var(--accent,#2563a8);cursor:pointer;" style-hover="background:var(--accent,#2563a8);color:#fff;">⇪ นำเข้าไฟล์ · Import</button>
-      </div>
+      </div> -->
       <div style="background:#fff;border:1px solid #e4e7ec;border-radius:12px;overflow:hidden;box-shadow:0 1px 2px rgba(16,24,40,.04);">
         <div style="display:grid;grid-template-columns:52px minmax(280px,2.4fr) 132px 134px 158px 96px;gap:0;align-items:center;padding:0 18px;background:#f9fafb;border-bottom:1px solid #e4e7ec;font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.04em;color:#667085;height:42px;">
           <span>#</span>
@@ -339,7 +340,7 @@
 
         <div style="padding:20px 22px;display:flex;flex-direction:column;gap:16px;max-height:66vh;overflow:auto;">
 
-          <div style="border:1px solid #e4e7ec;border-radius:10px;overflow:hidden;">
+          <!-- <div style="border:1px solid #e4e7ec;border-radius:10px;overflow:hidden;">
             <button onClick="{{ onToggleHelp }}" style="width:100%;display:flex;align-items:center;justify-content:space-between;gap:8px;padding:11px 14px;background:#f9fafb;border:none;cursor:pointer;text-align:left;">
               <span style="font-size:12.5px;font-weight:600;color:#344054;">วิธีสร้าง Client ID + API Key (ทำครั้งแรกครั้งเดียว)</span>
               <span style="font-size:12px;color:#667085;font-weight:600;">{{ helpToggle }}</span>
@@ -362,21 +363,21 @@
                 </ol>
               </div>
             </sc-if>
-          </div>
+          </div> -->
 
           <div style="display:flex;flex-direction:column;gap:12px;">
-            <div>
+            <!-- <div>
               <label style="display:block;font-size:11.5px;font-weight:600;color:#475467;margin-bottom:5px;">OAuth Client ID</label>
-              <input value="{{ clientId }}" onInput="{{ onClientId }}" placeholder="xxxxxxxx.apps.googleusercontent.com" style="width:100%;padding:9px 11px;border:1px solid #d0d5dd;border-radius:8px;font-size:12.5px;outline:none;font-family:'IBM Plex Mono',monospace;" style-focus="border-color:var(--accent,#2563a8);box-shadow:0 0 0 3px var(--accent-soft,#eaf1fa);">
+              <input aria-disabled="true" value="{{ clientId }}" onInput="{{ onClientId }}" placeholder="xxxxxxxx.apps.googleusercontent.com" style="width:100%;padding:9px 11px;border:1px solid #d0d5dd;border-radius:8px;font-size:12.5px;outline:none;font-family:'IBM Plex Mono',monospace;" style-focus="border-color:var(--accent,#2563a8);box-shadow:0 0 0 3px var(--accent-soft,#eaf1fa);">
             </div>
             <div>
               <label style="display:block;font-size:11.5px;font-weight:600;color:#475467;margin-bottom:5px;">API Key</label>
-              <input value="{{ apiKey }}" onInput="{{ onApiKey }}" placeholder="AIza…" style="width:100%;padding:9px 11px;border:1px solid #d0d5dd;border-radius:8px;font-size:12.5px;outline:none;font-family:'IBM Plex Mono',monospace;" style-focus="border-color:var(--accent,#2563a8);box-shadow:0 0 0 3px var(--accent-soft,#eaf1fa);">
-            </div>
+              <input aria-disabled="true" value="{{ apiKey }}" onInput="{{ onApiKey }}" placeholder="AIza…" style="width:100%;padding:9px 11px;border:1px solid #d0d5dd;border-radius:8px;font-size:12.5px;outline:none;font-family:'IBM Plex Mono',monospace;" style-focus="border-color:var(--accent,#2563a8);box-shadow:0 0 0 3px var(--accent-soft,#eaf1fa);">
+            </div> -->
             <button onClick="{{ onAuthorize }}" style="align-self:flex-start;padding:9px 18px;border-radius:8px;font-size:12.5px;font-weight:600;border:1px solid var(--accent,#2563a8);background:var(--accent,#2563a8);color:#fff;cursor:pointer;" style-hover="filter:brightness(1.07);">{{ authBtnLabel }}</button>
           </div>
 
-          <sc-if value="{{ authed }}" hint-placeholder-val="{{ false }}">
+          <!-- <sc-if value="{{ authed }}" hint-placeholder-val="{{ false }}">
             <div style="border-top:1px solid #eef0f3;padding-top:16px;display:flex;flex-direction:column;gap:12px;">
               <div style="font-size:12.5px;font-weight:600;color:#344054;">เลือก Google Sheet ที่ต้องการ</div>
               <div>
@@ -391,7 +392,7 @@
               </div>
               <button onClick="{{ onOpenPicker }}" style="align-self:flex-start;display:inline-flex;align-items:center;gap:7px;padding:9px 16px;border-radius:8px;font-size:12.5px;font-weight:600;border:1px solid #d0d5dd;background:#fff;color:#344054;cursor:pointer;" style-hover="background:#f9fafb;border-color:#b9c0cc;">📁 เลือกจาก Google Drive</button>
             </div>
-          </sc-if>
+          </sc-if> -->
         </div>
       </div>
     </div>
@@ -418,8 +419,9 @@ class Component extends DCLogic {
     Develop: {en:'Develop', th:'กำลังพัฒนา',   text:'#1c5fa8', bg:'#e8f0fa', dot:'#3a7bd0'},
     Reject:  {en:'Reject',  th:'ตีกลับ',       text:'#a83b2b', bg:'#fbe9e6', dot:'#d15842'},
     Done:    {en:'Done',    th:'เสร็จสิ้น',    text:'#1f7a4d', bg:'#e7f4ec', dot:'#2e9e63'},
+    Deployed:    {en:'Deployed',    th:'ใช้งานแล้ว',    text:'#0a6b5e', bg:'#e7f4ec', dot:'#0a6b5e'},
   };
-  static STATUS_ORDER = ['Design','Waiting','Develop','Reject','Done'];
+  static STATUS_ORDER = ['Design','Waiting','Develop','Reject','Done','Deployed'];
   static ENV = {
     DEV:        {en:'DEV',        th:'พัฒนา',     text:'#475467', bg:'#eef0f3'},
     UAT:        {en:'UAT',        th:'ทดสอบ',     text:'#855a12', bg:'#fbf3e1'},
@@ -435,8 +437,7 @@ class Component extends DCLogic {
 
   state = {
     tasks: [
-      {id:1, title:'รองรับสิทธิ์ข้าราชการ', card:Component.J+'HEDP-9899', status:'Done', env:'PRODUCTION', date:'', remark:''},
-      {id:2, title:'รองรับสิทธิ์ กทม', card:Component.J+'HEDP-12903', status:'Done', env:'PRODUCTION', date:'', remark:''},
+      
     ],
     view: 'table',
     filter: 'all',
@@ -450,10 +451,10 @@ class Component extends DCLogic {
     gOpen: false,
     gStep: 'creds',
     authed: false,
-    clientId: '',
-    apiKey: '',
+    clientId: '912519007254-ldsbfnds6t1p7ni0e4fhb40me13e6s2o.apps.googleusercontent.com',
+    apiKey: 'AIzaSyCl5JK_l1GWkxH94lqbecnwERfBbWUb-RI',
     spreadsheetName: '',
-    sheetUrlInput: '',
+    sheetUrlInput: 'https://docs.google.com/spreadsheets/d/1IpfWB5NqkGfai3m1DjAl9ZCpYRWVMb8mnWQ9O7Dycqs',
     showHelp: true,
     editorOpen: false,
     editing: null,
@@ -676,6 +677,8 @@ class Component extends DCLogic {
       try{ localStorage.setItem('nhso_gcid', cid); localStorage.setItem('nhso_gkey', key); }catch(_){}
       this.setState({authed:true, gStep:'pick', busy:false});
       this.toast('เชื่อมต่อ Google สำเร็จ · authorized','ok');
+
+      this.loadFromUrl();
     }catch(e){ this.setState({busy:false}); this.gErr(e); }
   }
 
@@ -812,13 +815,15 @@ class Component extends DCLogic {
     const d = this.state.draft;
     if(!d.title || !d.title.trim()){ this.toast('Title is required · กรุณากรอกชื่องาน','error'); return; }
     let tasks = this.state.tasks.slice();
-    if(this.state.editing != null){
+    const wasNew = this.state.editing == null;
+	if(!wasNew){		
       tasks = tasks.map(t => t.id === this.state.editing ? {...d, id:this.state.editing} : t);
     } else {
       const id = tasks.reduce((m,t) => Math.max(m, t.id), 0) + 1;
       tasks = [...tasks, {...d, id}];
     }
-    this.setState({tasks, editorOpen:false, editing:null}, () => this.persist(true));
+    this.setState({tasks, editorOpen:false, editing:null, dirty:true});
+    this.toast((wasNew ? 'เพิ่มงาน (ฉบับร่าง)' : 'แก้ไขแล้ว (ฉบับร่าง)') + ' · อย่าลืมกด “บันทึกลง Excel”','warn');
   }
   deleteTask(){
     if(this.state.editing == null) return;
@@ -832,6 +837,12 @@ class Component extends DCLogic {
     this.setState({tasks}, () => this.persist());
     this.toast('Deleted · ลบแล้ว','warn');
   }
+	async saveToExcel(){
+    if(!this.state.dirty){ this.toast('ไม่มีการเปลี่ยนแปลง · nothing to save','ok'); return; }
+    if(!this.spreadsheetId){ this.toast('ยังไม่ได้เชื่อมไฟล์ — กด Connect ก่อน · connect a file first','warn'); return; }
+    const ok = await this.gWrite(false);
+    if(ok) this.setState({dirty:false});
+  }				  
   persist(){
     if(this.spreadsheetId){ this.gWrite(false); }
     else { this.toast('ยังไม่ได้เชื่อม Sheet — เก็บในแอปชั่วคราว · connect a Sheet to save','warn'); }
@@ -988,6 +999,18 @@ class Component extends DCLogic {
 
     const saveTo = this.spreadsheetId ? ('writes to Google Sheet · ' + (this.state.spreadsheetName || 'connected sheet')) : 'connect a Google Sheet to save — otherwise kept in app only';
 
+	// Save-to-Excel button (only writes the file when pressed)
+    const dirty = this.state.dirty;
+    const canSave = dirty && !this.state.busy;
+    const saveExcelLabel = this.state.busy ? '⟳ กำลังบันทึก…' : (dirty ? '● บันทึกลง Excel' : '✓ บันทึกแล้ว');
+    const saveExcelStyle = {
+      display:'inline-flex', alignItems:'center', gap:'6px', padding:'8px 15px', borderRadius:'8px',
+      fontSize:'12.5px', fontWeight:600, cursor: canSave ? 'pointer' : 'default',
+      border:'1px solid ' + (dirty ? '#1f7a4d' : '#d0d5dd'),
+      backgroundColor: dirty ? '#1f7a4d' : '#ffffff',
+      color: dirty ? '#ffffff' : '#98a2b3',
+      boxShadow: dirty ? '0 1px 2px rgba(31,122,77,.25)' : 'none',
+    };																								
     return {
       rootRef:this.rootRef, importInputRef:this.importInputRef,
 
@@ -997,6 +1020,7 @@ class Component extends DCLogic {
       connectLabel:this.state.connected ? '☁ Google Sheet' : '☁ Connect Google Sheet',
       onConnect:() => this.onConnect(), onReload:() => this.onReload(),
       onImport:() => this.onImport(), onExport:() => this.onExport(), onNew:() => this.newTask(),
+		onSaveExcel:() => this.saveToExcel(), saveExcelLabel, saveExcelStyle, dirty,									 
       onImportInput:(e) => this.onImportInput(e),
 
       // google modal
@@ -1051,8 +1075,10 @@ class Component extends DCLogic {
       onRemark:(e) => this.setField('remark', e.target.value),
       onClose:() => this.closeEditor(), onSaveDraft:() => this.saveDraft(), onDelete:() => this.deleteTask(),
       stop:(e) => e.stopPropagation(),
-      saveTargetIcon: this.spreadsheetId ? '☁' : '↪',
-      saveTargetHint: 'On save: ' + saveTo,
+      //saveTargetIcon: this.spreadsheetId ? '☁' : '↪',
+      //saveTargetHint: 'On save: ' + saveTo,
+	  saveTargetIcon: '✎',
+      saveTargetHint: 'บันทึกเป็นฉบับร่างก่อน — กดปุ่ม “บันทึกลง Excel” ที่แถบบนเพื่อบันทึกลงไฟล์จริง · saved as draft; use “Save to Excel” to write the file',
 
       // toast
       hasToast:!!tt,
