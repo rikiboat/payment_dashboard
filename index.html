@@ -100,6 +100,31 @@
         </div>
       </div>
 
+	  <!-- release progress -->
+      <div style="background:#fff;border:1px solid #e4e7ec;border-radius:12px;padding:18px;display:flex;align-items:center;gap:16px;box-shadow:0 1px 2px rgba(16,24,40,.04);">
+        <div style="position:relative;flex:0 0 auto;width:84px;height:84px;">
+          <svg width="84" height="84" viewBox="0 0 84 84" style="transform:rotate(-90deg);">
+            <circle cx="42" cy="42" r="34" fill="none" stroke="#f0edf9" stroke-width="9"></circle>
+            <circle cx="42" cy="42" r="34" fill="none" stroke-width="9" stroke-linecap="round" stroke-dasharray="{{ ringCirc }}" stroke-dashoffset="{{ relRingOffset }}" style="stroke:#5b46b0;transition:stroke-dashoffset .5s ease;"></circle>
+          </svg>
+          <div style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;">
+            <span style="font-size:21px;font-weight:700;letter-spacing:-0.02em;font-family:'IBM Plex Mono',monospace;color:#3f2f86;">{{ relPct }}%</span>
+          </div>
+        </div>
+        <div style="min-width:0;flex:1;">
+          <div style="font-size:13px;font-weight:600;">Release progress</div>
+          <div style="font-size:11.5px;color:#667085;margin-bottom:7px;">รอบ deploy prod · แยกจาก Active</div>
+          <sc-if value="{{ hasReleases }}" hint-placeholder-val="{{ false }}">
+            <select value="{{ releaseSel }}" onChange="{{ onReleaseSel }}" style="width:100%;max-width:100%;padding:5px 8px;border:1px solid #e0dcef;border-radius:7px;font-size:11.5px;background:#faf9fd;outline:none;cursor:pointer;color:#3f2f86;font-weight:600;margin-bottom:7px;font-family:'IBM Plex Mono',monospace;">
+              <sc-for list="{{ releaseOptions }}" as="o" hint-placeholder-count="2"><option value="{{ o.value }}">{{ o.label }}</option></sc-for>
+            </select>
+            <div style="font-size:12px;color:#344054;line-height:1.5;"><b style="font-family:'IBM Plex Mono',monospace;">{{ relDone }}</b>/<span style="font-family:'IBM Plex Mono',monospace;">{{ relTotal }}</span> deployed · <span style="{{ relDaysStyle }}">{{ relDaysTxt }}</span></div>
+          </sc-if>
+          <sc-if value="{{ noReleases }}" hint-placeholder-val="{{ true }}">
+            <div style="font-size:12px;color:#98a2b3;line-height:1.55;margin-top:2px;">ยังไม่มีรอบ release<br>เปิดงานแล้วตั้ง “Release” เพื่อ push เข้ารอบ</div>
+          </sc-if>
+        </div>
+      </div>			   
       <!-- totals -->
       <div style="background:#fff;border:1px solid #e4e7ec;border-radius:12px;padding:18px;box-shadow:0 1px 2px rgba(16,24,40,.04);">
         <div style="font-size:11.5px;color:#667085;font-weight:600;text-transform:uppercase;letter-spacing:.04em;margin-bottom:10px;">Totals · ทั้งหมด</div>
@@ -168,6 +193,9 @@
           <span style="position:absolute;left:10px;color:#98a2b3;font-size:13px;pointer-events:none;">⌕</span>
           <input value="{{ search }}" onInput="{{ onSearch }}" placeholder="Search title, card, remark…" style="padding:8px 12px 8px 28px;border:1px solid #d0d5dd;border-radius:8px;font-size:12.5px;width:230px;background:#fff;outline:none;" style-focus="border-color:var(--accent,#2563a8);box-shadow:0 0 0 3px var(--accent-soft,#eaf1fa);">
         </div>
+		<select value="{{ releaseFilter }}" onChange="{{ onReleaseFilter }}" style="padding:8px 10px;border:1px solid #d0d5dd;border-radius:8px;font-size:12.5px;background:#fff;outline:none;cursor:pointer;color:#344054;">
+          <sc-for list="{{ releaseFilterOptions }}" as="o" hint-placeholder-count="2"><option value="{{ o.value }}">{{ o.label }}</option></sc-for>
+        </select>	
         <select value="{{ envFilter }}" onChange="{{ onEnvFilter }}" style="padding:8px 10px;border:1px solid #d0d5dd;border-radius:8px;font-size:12.5px;background:#fff;outline:none;cursor:pointer;color:#344054;">
           <option value="all">All environments</option>
           <option value="DEV">DEV · พัฒนา</option>
@@ -227,6 +255,7 @@
                 <sc-if value="{{ t.hasEnv }}" hint-placeholder-val="{{ true }}"><div style="{{ t.envTextStyle }}">{{ t.envLabel }}</div></sc-if>
                 <sc-if value="{{ t.noEnv }}" hint-placeholder-val="{{ false }}"><div style="font-size:13px;color:#cbd2da;">—</div></sc-if>
                 <sc-if value="{{ t.hasDate }}" hint-placeholder-val="{{ false }}"><div style="font-size:11.5px;color:#98a2b3;margin-top:2px;font-family:'IBM Plex Mono',monospace;">{{ t.dateLong }}</div></sc-if>
+				<sc-if value="{{ t.hasRelease }}" hint-placeholder-val="{{ false }}"><div style="display:inline-flex;align-items:center;gap:4px;margin-top:3px;font-size:10.5px;font-weight:600;color:#5b46b0;background:#f3f0fb;border:1px solid #e6e0f7;border-radius:5px;padding:1px 6px;font-family:'IBM Plex Mono',monospace;">⬢ {{ t.releaseLong }}</div></sc-if>
               </div>
               <div style="display:flex;align-items:center;justify-content:flex-end;gap:7px;">
                 <button onClick="{{ t.onEditBtn }}" title="Edit · แก้ไข" style="width:32px;height:32px;border-radius:8px;border:1px solid #e4e7ec;background:#fff;color:#667085;cursor:pointer;display:flex;align-items:center;justify-content:center;flex:0 0 auto;" style-hover="border-color:var(--accent,#2563a8);color:var(--accent,#2563a8);background:var(--accent-soft,#eaf1fa);">
@@ -306,7 +335,20 @@
               <input value="{{ draft.remark }}" onInput="{{ onRemark }}" placeholder="เช่น รอบ 30/6" style="width:100%;padding:9px 11px;border:1px solid #d0d5dd;border-radius:8px;font-size:13px;outline:none;" style-focus="border-color:var(--accent,#2563a8);box-shadow:0 0 0 3px var(--accent-soft,#eaf1fa);">
             </div>
           </div>
-
+			<div>
+            <label style="display:block;font-size:11.5px;font-weight:600;color:#475467;margin-bottom:5px;">Release · รอบ deploy prod (วันที่)</label>
+            <div style="display:flex;gap:8px;align-items:center;">
+              <input type="date" value="{{ draft.release }}" onInput="{{ onRelease }}" style="flex:1;min-width:0;padding:9px 11px;border:1px solid #d0d5dd;border-radius:8px;font-size:13px;outline:none;font-family:'IBM Plex Mono',monospace;" style-focus="border-color:#5b46b0;box-shadow:0 0 0 3px rgba(91,70,176,.14);">
+              <sc-if value="{{ hasReleaseList }}" hint-placeholder-val="{{ false }}">
+                <select value="{{ draft.release }}" onChange="{{ onRelease }}" style="flex:0 0 auto;max-width:152px;padding:9px 10px;border:1px solid #d0d5dd;border-radius:8px;font-size:12px;background:#fff;outline:none;cursor:pointer;">
+                  <option value="">— รอบที่มี</option>
+                  <sc-for list="{{ releasePickOptions }}" as="o" hint-placeholder-count="2"><option value="{{ o.value }}">{{ o.label }}</option></sc-for>
+                </select>
+              </sc-if>
+              <button onClick="{{ onReleaseClear }}" type="button" title="Clear release" style="flex:0 0 auto;padding:9px 11px;border-radius:8px;border:1px solid #d0d5dd;background:#fff;color:#667085;cursor:pointer;font-size:12px;font-weight:600;" style-hover="background:#f2f4f7;">ล้าง</button>
+            </div>
+            <div style="font-size:11px;color:#8a63d2;margin-top:6px;">ตั้งวันที่นี้เพื่อ push งานเข้ารอบ release — งานจะถูกคิด % แยกจาก Active progress</div>
+          </div>
           <div style="display:flex;align-items:center;gap:8px;font-size:11.5px;color:#667085;background:#f9fafb;border:1px solid #eef0f3;border-radius:8px;padding:9px 11px;">
             <span style="flex:0 0 auto;">{{ saveTargetIcon }}</span>
             <span>{{ saveTargetHint }}</span>
@@ -447,6 +489,8 @@ class Component extends DCLogic {
     filter: 'all',
     page: 1,
     envFilter: 'all',
+	  releaseFilter: 'all',
+    releaseSel: '',					  
     search: '',
     connected: false,
     fileName: 'NHSO_TASK.xlsx · sample',
@@ -540,6 +584,8 @@ class Component extends DCLogic {
       dateLabel: iso || '—',
       hasDate: !!iso,
       dateLong: this.fmtDateLong(t.date),
+	    hasRelease: !!(t.release && String(t.release).trim()),
+      releaseLong: this.fmtDateLong(t.release),		
       hasRemark: !!(t.remark && String(t.remark).trim()),
       remark: t.remark || '',
       remarkLabel: t.remark ? t.remark : '—',
@@ -556,7 +602,7 @@ class Component extends DCLogic {
     if(!aoa || !aoa.length) throw {code:2004};
     const head = (aoa[0]||[]).map(x => String(x).trim().toLowerCase());
     const ci = (n) => head.findIndex(hh => hh.startsWith(n));
-    const iT=ci('title'), iC=ci('card'), iS=ci('status'), iE=ci('env'), iD=ci('date'), iR=ci('remark');
+    const iT=ci('title'), iC=ci('card'), iS=ci('status'), iE=ci('env'), iD=ci('date'), iR=ci('remark'), iRel=ci('release');
     if(iT < 0) throw {code:2003};
     const rows = [];
     let id = 1;
@@ -573,6 +619,7 @@ class Component extends DCLogic {
         env: Component.ENV[envRaw] ? envRaw : (envRaw || ''),
         date: iD>=0 ? this.fmtDate(row[iD]) : '',
         remark: iR>=0 ? String(row[iR]==null?'':row[iR]).trim() : '',
+		release: iRel>=0 ? this.fmtDate(row[iRel]) : '',
       });
     }
     if(!rows.length) throw {code:2004};
@@ -587,10 +634,10 @@ class Component extends DCLogic {
 
   buildWb(){
     const X = window.XLSX;
-    const header = ['Title','Card','Status','Env.','Date','Remark'];
-    const aoa = [header, ...this.state.tasks.map(t => [t.title, t.card, t.status, t.env, t.date, t.remark])];
+    const header = ['Title','Card','Status','Env.','Date','Remark','Release'];
+    const aoa = [header, ...this.state.tasks.map(t => [t.title, t.card, t.status, t.env, t.date, t.remark, t.release || ''])];
     const ws = X.utils.aoa_to_sheet(aoa);
-    ws['!cols'] = [{wch:52},{wch:46},{wch:12},{wch:12},{wch:12},{wch:18}];
+    ws['!cols'] = [{wch:52},{wch:46},{wch:12},{wch:12},{wch:12},{wch:18},{wch:12}];
     let wb = this.wb;
     if(!wb || !wb.SheetNames){ wb = X.utils.book_new(); }
     if(wb.SheetNames.includes('Task')) wb.Sheets['Task'] = ws;
@@ -717,8 +764,8 @@ class Component extends DCLogic {
       await this.ensureGoogle();
       await this.initClient();
       await this.ensureToken();
-      const header = ['Title','Card','Status','Env.','Date','Remark'];
-      const values = [header, ...this.state.tasks.map(t => [t.title, t.card, t.status, t.env, t.date, t.remark])];
+      const header = ['Title','Card','Status','Env.','Date','Remark','Release'];
+      const values = [header, ...this.state.tasks.map(t => [t.title, t.card, t.status, t.env, t.date, t.remark, t.release || ''])];
       await window.gapi.client.sheets.spreadsheets.values.clear({spreadsheetId:this.spreadsheetId, range:"'" + this.sheetTab + "'"});
       await window.gapi.client.sheets.spreadsheets.values.update({spreadsheetId:this.spreadsheetId, range:"'" + this.sheetTab + "'!A1", valueInputOption:'RAW', resource:{values}});
       this.setState({busy:false, lastSync:Date.now()});
@@ -811,7 +858,7 @@ class Component extends DCLogic {
     this.setState({editorOpen:true, editing:id, draft:{...t}});
   }
   newTask(status){
-    this.setState({editorOpen:true, editing:null, draft:{title:'',card:Component.J,status:status||'Design',env:'',date:'',remark:''}});
+    this.setState({editorOpen:true, editing:null, draft:{title:'',card:Component.J,status:status||'Design',env:'',date:'',remark:'',release:''}});
   }
   closeEditor(){ this.setState({editorOpen:false, editing:null}); }
   setField(k, v){ this.setState(s => ({draft:{...s.draft, [k]:v}})); }
@@ -870,12 +917,47 @@ class Component extends DCLogic {
 
     // metrics — progress over NON-production, NON-rejected tasks only
     const active = tasks.filter(t => t.env !== 'PRODUCTION' && t.status !== 'Reject');
+	  const activeRelease = tasks.filter(t => !t.release && t.env !== 'PRODUCTION' && t.status !== 'Reject');
     const activeDone = active.filter(t => t.status === 'Done').length;
     const activeTotal = active.length;
     const pct = activeTotal ? Math.round(activeDone / activeTotal * 100) : 0;
     const prodCount = tasks.filter(t => t.env === 'PRODUCTION').length;
-    const rejectExcluded = tasks.filter(t => t.env !== 'PRODUCTION' && t.status === 'Reject').length;
-    const excludedNote = prodCount + ' shipped to prod' + (rejectExcluded ? (' · ' + rejectExcluded + ' rejected') : '') + ' · excluded';
+    const rejectExcluded = tasks.filter(t => !t.release && t.env !== 'PRODUCTION' && t.status === 'Reject').length;
+    const releaseScheduled = tasks.filter(t => t.release && t.env !== 'PRODUCTION' && t.status !== 'Reject').length;
+    const excludedNote = prodCount + ' in prod' + (releaseScheduled ? (' · ' + releaseScheduled + ' in release') : '') + (rejectExcluded ? (' · ' + rejectExcluded + ' rejected') : '') + ' · excluded';
+
+    // ----- Release progress (prod deploy rounds) -----
+    const relMap = {};
+    tasks.forEach(t => { if(t.release){ (relMap[t.release] = relMap[t.release] || []).push(t); } });
+    const relDates = Object.keys(relMap).sort();
+    const todayIso0 = new Date().toISOString().slice(0,10);
+    const relDatesUpcoming = relDates.filter(d => d >= todayIso0);
+    const relDoneOf = (d) => relMap[d].filter(t => t.status === 'Done' || t.status === 'Deployed').length;
+    let relSel = this.state.releaseSel;
+    if(!relSel || !relMap[relSel] || relSel < todayIso0){
+      relSel = relDatesUpcoming[0] || '';
+    }
+    const relTasks = relSel ? relMap[relSel] : [];
+    const relDone = relTasks.filter(t => t.status === 'Done' || t.status === 'Deployed').length;
+    const relTotal = relTasks.length;
+    const relPct = relTotal ? Math.round(relDone / relTotal * 100) : 0;
+    const relRingOffset = +(2 * Math.PI * 34 * (1 - relPct/100)).toFixed(2);
+    let relDaysTxt = '', relDaysStyle = {color:'#98a2b3', fontWeight:600};
+    if(relSel){
+      const today0 = new Date(); today0.setHours(0,0,0,0);
+      const rd = new Date(relSel + 'T00:00:00');
+      const diff = Math.round((rd - today0) / 86400000);
+      if(diff > 1){ relDaysTxt = 'in ' + diff + 'd'; relDaysStyle = {color:'#5b46b0', fontWeight:700}; }
+      else if(diff === 1){ relDaysTxt = 'tomorrow'; relDaysStyle = {color:'#b4531f', fontWeight:700}; }
+      else if(diff === 0){ relDaysTxt = 'today'; relDaysStyle = {color:'#b4531f', fontWeight:700}; }
+      else { relDaysTxt = Math.abs(diff) + 'd overdue'; relDaysStyle = {color:'#a83b2b', fontWeight:700}; }
+    }
+    const releaseOptions = relDatesUpcoming.map(d => ({value:d, label: this.fmtDateLong(d) + ' · ' + relDoneOf(d) + '/' + relMap[d].length}));
+    const releasePickOptions = relDates.map(d => ({value:d, label: this.fmtDateLong(d)}));
+    const releaseFilterOptions = [{value:'all', label:'All releases · ทุกรอบ'}]
+      .concat(relDates.map(d => ({value:d, label:'⬢ ' + this.fmtDateLong(d)})))
+      .concat([{value:'none', label:'— Unscheduled · ยังไม่เข้ารอบ'}]);
+    const hasReleases = relDatesUpcoming.length > 0;
     const doneCount = tasks.filter(t => t.status === 'Done').length;
     const deployedCount = tasks.filter(t => t.status === 'Deployed').length;
     const rejectCount = tasks.filter(t => t.status === 'Reject').length;
@@ -929,7 +1011,9 @@ class Component extends DCLogic {
 
     // table rows (also apply status filter) + pagination
     const fl = this.state.filter;
-    const allRows = tasks.filter(t => (fl === 'all' || t.status === fl) && passShared(t));
+    const rfl = this.state.releaseFilter;
+    const passRelease = (t) => rfl === 'all' ? true : (rfl === 'none' ? !t.release : t.release === rfl);
+    const allRows = tasks.filter(t => (fl === 'all' || t.status === fl) && passShared(t) && passRelease(t));
     const PER = 20;
     const pageCount = Math.max(1, Math.ceil(allRows.length / PER));
     const page = Math.min(this.state.page, pageCount);
@@ -1028,7 +1112,7 @@ class Component extends DCLogic {
       connectLabel:this.state.connected ? '☁ Google Sheet' : '☁ Connect Google Sheet',
       onConnect:() => this.onConnect(), onReload:() => this.onReload(),
       onImport:() => this.onImport(), onExport:() => this.onExport(), onNew:() => this.newTask(),
-		onSaveExcel:() => this.saveToExcel(), saveExcelLabel, saveExcelStyle, dirty,									 
+		  onSaveExcel:() => this.saveToExcel(), saveExcelLabel, saveExcelStyle, dirty,									 
       onImportInput:(e) => this.onImportInput(e),
 
       // google modal
@@ -1054,12 +1138,18 @@ class Component extends DCLogic {
       activeDone, activeTotal, prodCount, doneCount, openCount, excludedNote, totalNotReject, deployedCount,
       statusBars, envBars,
 
+		  relPct, relRingOffset, relDone, relTotal, relDaysTxt, relDaysStyle,
+      hasReleases, noReleases:!hasReleases,
+      releaseSel:relSel, releaseOptions,
+      onReleaseSel:(e) => this.setState({releaseSel:e.target.value}),											 
       // toolbar
       onBoard:() => this.setView('board'), onTable:() => this.setView('table'),
       boardBtnStyle:segBtn(isBoard), tableBtnStyle:segBtn(!isBoard),
       viewHint: isBoard ? 'drag-free kanban · จัดกลุ่มตามสถานะ' : 'filter & sort · ตารางรายการ',
       search:this.state.search, onSearch:(e) => this.setState({search:e.target.value, page:1}),
       envFilter:this.state.envFilter, onEnvFilter:(e) => this.setState({envFilter:e.target.value, page:1}),
+		  releaseFilter:this.state.releaseFilter, onReleaseFilter:(e) => this.setState({releaseFilter:e.target.value, page:1}),
+      releaseFilterOptions,											 
 
       isBoard, isTable:!isBoard,
       filterChips, columns, rows, noRows:rows.length === 0, rowCount:allRows.length,
@@ -1081,11 +1171,14 @@ class Component extends DCLogic {
       onEnv:(e) => this.setField('env', e.target.value),
       onDate:(e) => this.setField('date', e.target.value),
       onRemark:(e) => this.setField('remark', e.target.value),
+		  onRelease:(e) => this.setField('release', e.target.value),
+      onReleaseClear:() => this.setField('release', ''),
+      hasReleaseList:relDates.length > 0, releasePickOptions,											 
       onClose:() => this.closeEditor(), onSaveDraft:() => this.saveDraft(), onDelete:() => this.deleteTask(),
       stop:(e) => e.stopPropagation(),
       //saveTargetIcon: this.spreadsheetId ? '☁' : '↪',
       //saveTargetHint: 'On save: ' + saveTo,
-	  saveTargetIcon: '✎',
+	    saveTargetIcon: '✎',
       saveTargetHint: 'บันทึกเป็นฉบับร่างก่อน — กดปุ่ม “บันทึกลง Excel” ที่แถบบนเพื่อบันทึกลงไฟล์จริง · saved as draft; use “Save to Excel” to write the file',
 
       // toast
