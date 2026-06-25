@@ -380,13 +380,13 @@
           <sc-if value="{{ authed }}" hint-placeholder-val="{{ false }}">
             <div style="border-top:1px solid #eef0f3;padding-top:16px;display:flex;flex-direction:column;gap:12px;">
               <div style="font-size:12.5px;font-weight:600;color:#344054;">เลือก Google Sheet ที่ต้องการ</div>
-              <div>
+              <!-- <div>
                 <label style="display:block;font-size:11.5px;font-weight:600;color:#475467;margin-bottom:5px;">วางลิงก์หรือ ID ของ Sheet</label>
                 <div style="display:flex;gap:8px;">
                   <input value="{{ sheetUrlInput }}" onInput="{{ onSheetUrl }}" placeholder="https://docs.google.com/spreadsheets/d/…" style="flex:1;min-width:0;padding:9px 11px;border:1px solid #d0d5dd;border-radius:8px;font-size:12.5px;outline:none;font-family:'IBM Plex Mono',monospace;" style-focus="border-color:var(--accent,#2563a8);box-shadow:0 0 0 3px var(--accent-soft,#eaf1fa);">
                   <button onClick="{{ onLoadFromUrl }}" style="flex:0 0 auto;padding:9px 16px;border-radius:8px;font-size:12.5px;font-weight:600;border:1px solid var(--accent,#2563a8);background:var(--accent,#2563a8);color:#fff;cursor:pointer;" style-hover="filter:brightness(1.07);">โหลด</button>
                 </div>
-              </div>
+              </div> -->
               <div style="display:flex;align-items:center;gap:10px;color:#98a2b3;font-size:11.5px;">
                 <div style="flex:1;height:1px;background:#eef0f3;"></div>หรือ<div style="flex:1;height:1px;background:#eef0f3;"></div>
               </div>
@@ -678,7 +678,7 @@ class Component extends DCLogic {
       this.setState({authed:true, gStep:'pick', busy:false});
       this.toast('เชื่อมต่อ Google สำเร็จ · authorized','ok');
 
-      //this.loadFromUrl();
+      this.loadFromUrl();
     }catch(e){ this.setState({busy:false}); this.gErr(e); }
   }
 
