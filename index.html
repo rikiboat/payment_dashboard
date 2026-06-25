@@ -454,7 +454,7 @@ class Component extends DCLogic {
     clientId: '912519007254-ldsbfnds6t1p7ni0e4fhb40me13e6s2o.apps.googleusercontent.com',
     apiKey: 'AIzaSyCl5JK_l1GWkxH94lqbecnwERfBbWUb-RI',
     spreadsheetName: '',
-    sheetUrlInput: 'https://docs.google.com/spreadsheets/d/1IpfWB5NqkGfai3m1DjAl9ZCpYRWVMb8mnWQ9O7Dycqs',
+    sheetUrlInput: 'https://docs.google.com/spreadsheets/d/1TChLzsy4e39JhHGaPHtxExnZ-DSUPab2VLt45LcugAo',
     showHelp: true,
     editorOpen: false,
     editing: null,
@@ -724,7 +724,8 @@ class Component extends DCLogic {
   }
 
   loadFromUrl(){
-    const id = this.extractId(this.state.sheetUrlInput);
+    const id = this.state.sheetUrlInput
+    //const id = this.extractId(this.state.sheetUrlInput);
     if(!id){ this.toast('ลิงก์หรือ ID ไม่ถูกต้อง · invalid Sheet link/ID','error'); return; }
     this.gLoad(id, false);
   }
